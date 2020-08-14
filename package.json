@@ -1,0 +1,19 @@
+{
+    "name": "eelios",
+    "version": "1.0.0",
+    "description": "A fancy pants programming language.",
+    "main": "./build/index.js",
+    "scripts": {
+        "start": "tsc && node ./build/index.js"
+    },
+    "author": "VimHax",
+    "license": "MIT",
+    "dependencies": {
+        "@types/node": "^13.7.4",
+        "@typescript-eslint/eslint-plugin": "^2.23.0",
+        "@typescript-eslint/parser": "^2.23.0",
+        "eslint": "^6.8.0",
+        "eslint-config-marine": "^6.0.0",
+        "typescript": "^3.8.2"
+    }
+}
