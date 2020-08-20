@@ -21,8 +21,9 @@ export default function scanNumber(iter: Iter): Token | SyntaxError {
 	const end = iter.currentIdx();
 	const span = new Span(start, end);
 
-
-	if (/^((\d+)|(\d*\.\d+)|(\d+\.\d*))$/.exec(n) !== null) { return new Token(TokenKind.NumberLiteral, Number(n), span); }
+	if (/^((\d+)|(\d*\.\d+)|(\d+\.\d*))$/.exec(n) !== null) {
+		return new Token(TokenKind.NumberLiteral, Number(n), span);
+	}
 
 	return new SyntaxError(SyntaxErrorKind.InvalidCharacter, [n, span]);
 }

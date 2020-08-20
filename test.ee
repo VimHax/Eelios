@@ -1,6 +1,7 @@
-a <- b
-
-add <- fn a b [ ret a + b ]
-c <- add 2 3
-
-d <- if c = 5 then [ eval 2 ] else [ eval 3 ]
+[
+	a <- 1,
+	b <- 1 + 2 * 3,
+	add <- | x : number, y : number | -> number [ ret x + y ],
+	c <- add(a, b),
+	print c
+]

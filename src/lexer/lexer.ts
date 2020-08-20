@@ -21,7 +21,6 @@ export default class Lexer {
 	}
 
 	public unwind(): void {
-		console.log(this.processed, this.windingIdx);
 		if (!this.winding) throw Error('Already unwinded');
 		this.winding = false;
 		this.idx = this.windingIdx;
@@ -35,7 +34,9 @@ export default class Lexer {
 		const token = this.processed[this.idx + 1];
 		if (token !== undefined) return token;
 		const consumed = scan(this.iter);
-		if (consumed instanceof Token) { this.processed.push(consumed); }
+		if (consumed instanceof Token) {
+			this.processed.push(consumed);
+		}
 		return consumed;
 	}
 
@@ -46,7 +47,9 @@ export default class Lexer {
 			return token;
 		}
 		const consumed = scan(this.iter);
-		if (consumed instanceof Token) { this.processed.push(consumed); }
+		if (consumed instanceof Token) {
+			this.processed.push(consumed);
+		}
 		this.idx++;
 		return consumed;
 	}
@@ -54,12 +57,24 @@ export default class Lexer {
 	public consumeKind(kinds: TokenKind[]): Token | SyntaxError {
 		const token = this.processed[this.idx + 1];
 		if (token !== undefined) {
-			if (!kinds.includes(token.getKind())) return new SyntaxError(SyntaxErrorKind.ExpectedButFound, [kinds, token]);
+			if (!kinds.includes(token.getKind())) {
+				return new SyntaxError(SyntaxErrorKind.ExpectedButFound, [
+					kinds,
+					token
+				]);
+			}
 			this.idx++;
 			return token;
 		}
 		const consumed = scan(this.iter);
-		if (consumed instanceof Token) { if (!kinds.includes(consumed.getKind())) return new SyntaxError(SyntaxErrorKind.ExpectedButFound, [kinds, consumed]); }
+		if (consumed instanceof Token) {
+			if (!kinds.includes(consumed.getKind())) {
+				return new SyntaxError(SyntaxErrorKind.ExpectedButFound, [
+					kinds,
+					consumed
+				]);
+			}
+		}
 		this.processed.push(consumed as Token);
 		this.idx++;
 		return consumed;

@@ -2,14 +2,23 @@ import { Token, Span } from '../lexer/token';
 
 // DataType //
 
-export type DataType = 'string' | 'number' | 'boolean' | 'instruction' | FunctionDataType | ClosureDataType | ArrayDataType;
+export type DataType =
+	| 'string'
+	| 'number'
+	| 'boolean'
+	| 'instruction'
+	| FunctionDataType
+	| ClosureDataType
+	| ArrayDataType;
 
 export interface FunctionDataType {
+	type: 'function';
 	parameters: DataType[];
 	returnType: DataType;
 }
 
 export interface ClosureDataType {
+	type: 'closure';
 	parameters: DataType[];
 	returnType: DataType;
 }
@@ -21,7 +30,8 @@ export interface ArrayDataType {
 // RValue Node //
 
 export interface RValueVariableNode {
-	name: Token;
+	name: string;
+	span: Span;
 }
 
 export interface RValueIndexOfNode {
@@ -36,7 +46,10 @@ export interface RValueCallNode {
 	span: Span;
 }
 
-export type RValueNode = RValueVariableNode | RValueIndexOfNode;
+export type RValueNode =
+	| RValueVariableNode
+	| RValueIndexOfNode
+	| RValueCallNode;
 
 // Literal Node //
 
@@ -59,16 +72,18 @@ export interface BooleanLiteralNode {
 }
 
 export interface FunctionLiteralNode {
+	type: 'function';
 	parameters: [string, DataType][];
 	returnType: DataType;
-	instructions: InstructionNode;
+	instruction: InstructionNode;
 	span: Span;
 }
 
 export interface ClosureLiteralNode {
+	type: 'closure';
 	parameters: [string, DataType][];
 	returnType: DataType;
-	instructions: InstructionNode;
+	instruction: InstructionNode;
 	span: Span;
 }
 
@@ -79,7 +94,7 @@ export interface ArrayLiteralNode {
 
 // Expression Node //
 
-type UnaryOperator = 'plus' | 'minus';
+export type UnaryOperator = 'plus' | 'minus';
 
 export interface UnaryNode {
 	operator: UnaryOperator;
@@ -87,7 +102,21 @@ export interface UnaryNode {
 	span: Span;
 }
 
-type BinaryOperator = 'add' | 'subtract' | 'multiply' | 'divide' | 'modulus' | 'and' | 'or' | 'equal' | 'notequal' | 'lessthan' | 'greaterthan' | 'lessthanorequal' | 'greaterthanorequal';
+export type BinaryOperator =
+	| 'add'
+	| 'subtract'
+	| 'multiply'
+	| 'divide'
+	| 'power'
+	| 'modulus'
+	| 'and'
+	| 'or'
+	| 'equal'
+	| 'notequal'
+	| 'lessthan'
+	| 'greaterthan'
+	| 'lessthanorequal'
+	| 'greaterthanorequal';
 
 export interface BinaryNode {
 	operator: BinaryOperator;
@@ -95,7 +124,15 @@ export interface BinaryNode {
 	span: Span;
 }
 
-type ExpressionNode = RValueNode | StringLiteralNode | NumberLiteralNode | ArrayLiteralNode | UnaryNode | BinaryNode | InstructionNode;
+export type ExpressionNode =
+	| RValueNode
+	| StringLiteralNode
+	| NumberLiteralNode
+	| BooleanLiteralNode
+	| ArrayLiteralNode
+	| UnaryNode
+	| BinaryNode
+	| InstructionNode;
 
 // LValue Node //
 
@@ -104,7 +141,7 @@ export interface LValueVariableNode {
 }
 
 export interface LValueIndexOfNode {
-	rvalue: LValueNode;
+	lvalue: LValueNode;
 	index: ExpressionNode;
 	span: Span;
 }
@@ -125,24 +162,26 @@ export interface AssignInstructionNode {
 }
 
 export interface EvaluateInstructionNode {
+	type: 'eval';
 	expression: ExpressionNode;
 	span: Span;
 }
 
 export interface ReturnInstructionNode {
+	type: 'ret';
 	expression: ExpressionNode;
 	span: Span;
 }
 
 export interface ExecuteInstructionNode {
-	instructions: InstructionNode;
+	instruction: InstructionNode;
 	span: Span;
 }
 
 export interface IfInstructionNode {
 	condition: ExpressionNode;
-	then: InstructionNode;
-	else: InstructionNode | null;
+	thenInstruction: InstructionNode;
+	elseInstruction: InstructionNode | null;
 	span: Span;
 }
 
@@ -152,4 +191,12 @@ export interface WhileInstructionNode {
 	span: Span;
 }
 
-export type InstructionNode = PrintInstructionNode | AssignInstructionNode | EvaluateInstructionNode | ReturnInstructionNode | ExecuteInstructionNode | ArrayLiteralNode;
+export type InstructionNode =
+	| PrintInstructionNode
+	| AssignInstructionNode
+	| EvaluateInstructionNode
+	| ReturnInstructionNode
+	| ExecuteInstructionNode
+	| ArrayLiteralNode
+	| IfInstructionNode
+	| WhileInstructionNode;

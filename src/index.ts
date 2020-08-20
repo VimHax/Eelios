@@ -1,6 +1,9 @@
 import { Token, TokenKind } from './lexer/token';
 import Lexer from './lexer/lexer';
+import Parser from './parser/parser';
+
 import fs from 'fs';
+import util from 'util';
 
 const contents = fs.readFileSync('./test.ee').toString();
 
@@ -19,3 +22,6 @@ while (token instanceof Token && token.getKind() !== TokenKind.EOF) {
 }
 
 if (!(token instanceof Token)) token.print(contents);
+
+const parser = new Parser(contents);
+console.log(util.inspect(parser.parse(), false, null, true));

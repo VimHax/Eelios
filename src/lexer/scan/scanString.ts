@@ -29,7 +29,12 @@ export default function scanString(iter: Iter): Token | SyntaxError {
 	const span = new Span(start, end);
 	iter.next();
 
-	if (terminated) { return new Token(TokenKind.StringLiteral, str, span); }
+	if (terminated) {
+		return new Token(TokenKind.StringLiteral, str, span);
+	}
 
-	return new SyntaxError(SyntaxErrorKind.UnterminatedStringLiteral, [str, span]);
+	return new SyntaxError(SyntaxErrorKind.UnterminatedStringLiteral, [
+		str,
+		span
+	]);
 }

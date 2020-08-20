@@ -29,46 +29,55 @@ export class Span {
 			total += length;
 		}
 		const [startCharNo, endCharNo] = [this.start - total, this.end - total];
-		return `Line: ${lineNo + 1}, Character: ${startCharNo + 1}-${endCharNo + 1}`;
+		return `Line: ${lineNo + 1}, Character: ${startCharNo + 1}-${
+			endCharNo + 1
+		}`;
 	}
 }
 
 export enum TokenKind {
-
 	EOF = 'EOF',
 	Identifier = 'Identifier',
 
-	Colon = 'Colon',           // :
-	Comma = 'Comma',           // ,
-	RParen = 'RParen',         // (
-	LParen = 'LParen',         // )
-	LBracket = 'LBracket',     // [
-	RBracket = 'RBracket',     // ]
+	Colon = 'Colon', // :
+	Comma = 'Comma', // ,
+	RParen = 'RParen', // (
+	LParen = 'LParen', // )
+	LBracket = 'LBracket', // [
+	RBracket = 'RBracket', // ]
 
-	Plus = 'Plus',             // +
-	Minus = 'Minus',           // -
-	Star = 'Star',             // *
-	Slash = 'Slash',           // /
+	Plus = 'Plus', // +
+	Minus = 'Minus', // -
+	Star = 'Star', // *
+	Slash = 'Slash', // /
+	Caret = 'Caret', // ^
 	Percentage = 'Percentage', // %
-	Ampersand = 'Ampersand',   // &
-	Pipe = 'Pipe',             // |
+	Ampersand = 'Ampersand', // &
+	Pipe = 'Pipe', // |
 
-	Not = 'Not',               // !
-	Eq = 'Eq',                 // =
-	NotEq = 'NotEq',           // !=
-	Lt = 'Lt',                 // <
-	Gt = 'Gt',                 // >
-	Le = 'Le',                 // <=
-	Ge = 'Ge',                 // >=
+	Not = 'Not', // !
+	Eq = 'Eq', // =
+	NotEq = 'NotEq', // !=
+	Lt = 'Lt', // <
+	Gt = 'Gt', // >
+	Le = 'Le', // <=
+	Ge = 'Ge', // >=
 
-	LtMinus = 'LtMinus',       // <-
-	MinusGt = 'MinusGt',       // ->
+	LtMinus = 'LtMinus', // <-
+	MinusGt = 'MinusGt', // ->
+	EqGt = 'EqGt', // =>
 
-	FnKw = 'FnKw',             // fn
+	PrintKW = 'PrintKW',
+	EvalKW = 'EvalKW',
+	ExecKW = 'ExecKW',
+	RetKW = 'RetKW',
+	IfKW = 'IfKW',
+	ElseKW = 'ElseKW',
+	WhileKW = 'WhileKW',
 
 	NumberLiteral = 'NumberLiteral',
 	StringLiteral = 'StringLiteral',
-
+	BooleanLiteral = 'BooleanLiteral'
 }
 
 export class Token {

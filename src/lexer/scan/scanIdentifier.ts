@@ -19,7 +19,26 @@ export default function scanIdentifier(iter: Iter): Token | SyntaxError {
 	const end = iter.currentIdx();
 	const span = new Span(start, end);
 
-	if (ident === 'fn') { return new Token(TokenKind.FnKw, undefined, span); }
+	switch (ident) {
+		case 'true':
+			return new Token(TokenKind.BooleanLiteral, true, span);
+		case 'false':
+			return new Token(TokenKind.BooleanLiteral, false, span);
+		case 'print':
+			return new Token(TokenKind.PrintKW, null, span);
+		case 'eval':
+			return new Token(TokenKind.EvalKW, null, span);
+		case 'exec':
+			return new Token(TokenKind.ExecKW, null, span);
+		case 'ret':
+			return new Token(TokenKind.RetKW, null, span);
+		case 'if':
+			return new Token(TokenKind.IfKW, null, span);
+		case 'else':
+			return new Token(TokenKind.ElseKW, null, span);
+		case 'while':
+			return new Token(TokenKind.WhileKW, null, span);
+	}
 
 	return new Token(TokenKind.Identifier, ident, span);
 }
