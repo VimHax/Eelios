@@ -12,13 +12,13 @@ export type DataType =
 	| ArrayDataType;
 
 export interface FunctionDataType {
-	type: 'function';
+	datatype: 'function';
 	parameters: DataType[];
 	returnType: DataType;
 }
 
 export interface ClosureDataType {
-	type: 'closure';
+	datatype: 'closure';
 	parameters: DataType[];
 	returnType: DataType;
 }
@@ -72,7 +72,7 @@ export interface BooleanLiteralNode {
 }
 
 export interface FunctionLiteralNode {
-	type: 'function';
+	datatype: 'function';
 	parameters: [string, DataType][];
 	returnType: DataType;
 	instruction: InstructionNode;
@@ -80,7 +80,7 @@ export interface FunctionLiteralNode {
 }
 
 export interface ClosureLiteralNode {
-	type: 'closure';
+	datatype: 'closure';
 	parameters: [string, DataType][];
 	returnType: DataType;
 	instruction: InstructionNode;

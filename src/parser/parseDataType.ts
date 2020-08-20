@@ -1,6 +1,6 @@
 import Lexer from '../lexer/lexer';
 import { TokenKind } from '../lexer/token';
-import { SyntaxError, SyntaxErrorKind } from '../error/syntaxError';
+import { InvalidDataType } from '../error/syntaxError';
 import {
 	DataType,
 	ArrayDataType,
@@ -8,27 +8,18 @@ import {
 	ClosureDataType
 } from './ast';
 
-export default function ParseDataType(lexer: Lexer): DataType | SyntaxError {
+// ParseDataType //
+/* Parses and returns a data type */
+
+export default function ParseDataType(lexer: Lexer): DataType {
 	const token = lexer.consume();
-	if (token instanceof SyntaxError) {
-		return token;
-	}
 	switch (token.getKind()) {
 		case TokenKind.Identifier: {
 			const datatype = token.getValue() as string;
 			if (datatype === 'Array') {
-				const ltToken = lexer.consumeKind([TokenKind.Lt]);
-				if (ltToken instanceof SyntaxError) {
-					return ltToken;
-				}
+				lexer.consumeKind([TokenKind.Lt]);
 				const datatype = ParseDataType(lexer);
-				if (datatype instanceof SyntaxError) {
-					return datatype;
-				}
-				const gtToken = lexer.consumeKind([TokenKind.Gt]);
-				if (gtToken instanceof SyntaxError) {
-					return gtToken;
-				}
+				lexer.consumeKind([TokenKind.Gt]);
 				return { datatype } as ArrayDataType;
 			}
 			if (
@@ -36,10 +27,7 @@ export default function ParseDataType(lexer: Lexer): DataType | SyntaxError {
 					datatype
 				)
 			) {
-				return new SyntaxError(
-					SyntaxErrorKind.InvalidDataType,
-					token.getSpan()
-				);
+				throw new InvalidDataType(token.getSpan());
 			}
 			return datatype as DataType;
 		}
@@ -47,36 +35,18 @@ export default function ParseDataType(lexer: Lexer): DataType | SyntaxError {
 			const parameters: DataType[] = [];
 			let first = true;
 			let peek = lexer.peek();
-			if (peek instanceof SyntaxError) return peek;
 			while (![TokenKind.EOF, TokenKind.Pipe].includes(peek.getKind())) {
-				if (first) {
-					first = false;
-				} else {
-					const commaToken = lexer.consumeKind([TokenKind.Comma]);
-					if (commaToken instanceof SyntaxError) return commaToken;
-				}
+				if (first) first = false;
+				else lexer.consumeKind([TokenKind.Comma]);
 				const parameter = ParseDataType(lexer);
-				if (parameter instanceof SyntaxError) {
-					return parameter;
-				}
 				parameters.push(parameter);
 				peek = lexer.peek();
-				if (peek instanceof SyntaxError) return peek;
 			}
-			const pipeToken = lexer.consumeKind([TokenKind.Pipe]);
-			if (pipeToken instanceof SyntaxError) {
-				return pipeToken;
-			}
-			const minusGtToken = lexer.consumeKind([TokenKind.MinusGt]);
-			if (minusGtToken instanceof SyntaxError) {
-				return minusGtToken;
-			}
+			lexer.consumeKind([TokenKind.Pipe]);
+			lexer.consumeKind([TokenKind.MinusGt]);
 			const returnType = ParseDataType(lexer);
-			if (returnType instanceof SyntaxError) {
-				return returnType;
-			}
 			return {
-				type: 'function',
+				datatype: 'function',
 				parameters,
 				returnType
 			} as FunctionDataType;
@@ -85,42 +55,24 @@ export default function ParseDataType(lexer: Lexer): DataType | SyntaxError {
 			const parameters: DataType[] = [];
 			let first = true;
 			let peek = lexer.peek();
-			if (peek instanceof SyntaxError) return peek;
 			while (
 				![TokenKind.EOF, TokenKind.RParen].includes(peek.getKind())
 			) {
-				if (first) {
-					first = false;
-				} else {
-					const commaToken = lexer.consumeKind([TokenKind.Comma]);
-					if (commaToken instanceof SyntaxError) return commaToken;
-				}
+				if (first) first = false;
+				else lexer.consumeKind([TokenKind.Comma]);
 				const parameter = ParseDataType(lexer);
-				if (parameter instanceof SyntaxError) {
-					return parameter;
-				}
 				parameters.push(parameter);
 				peek = lexer.peek();
-				if (peek instanceof SyntaxError) return peek;
 			}
-			const rparenToken = lexer.consumeKind([TokenKind.RParen]);
-			if (rparenToken instanceof SyntaxError) {
-				return rparenToken;
-			}
-			const eqGtToken = lexer.consumeKind([TokenKind.EqGt]);
-			if (eqGtToken instanceof SyntaxError) {
-				return eqGtToken;
-			}
+			lexer.consumeKind([TokenKind.RParen]);
+			lexer.consumeKind([TokenKind.EqGt]);
 			const returnType = ParseDataType(lexer);
-			if (returnType instanceof SyntaxError) {
-				return returnType;
-			}
 			return {
-				type: 'closure',
+				datatype: 'closure',
 				parameters,
 				returnType
 			} as ClosureDataType;
 		}
 	}
-	return new SyntaxError(SyntaxErrorKind.InvalidDataType, token.getSpan());
+	throw new InvalidDataType(token.getSpan());
 }

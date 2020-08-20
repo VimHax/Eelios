@@ -1,18 +1,18 @@
 import { Iter } from '../iter';
 import { Token, TokenKind, Span } from '../token';
-import { SyntaxError } from '../../error/syntaxError';
 
-export default function scanIdentifier(iter: Iter): Token | SyntaxError {
+// scanIdentifier //
+/* Extracts an identifier from the provided iterator */
+
+export default function scanIdentifier(iter: Iter): Token {
 	let ident = iter.currentChar() as string;
 	const start = iter.currentIdx();
 	iter.next();
 
 	while (!iter.isEnd()) {
-		const c = iter.currentChar() as string;
-		if (/^[a-zA-Z0-9_]$/.exec(c) === null) {
-			break;
-		}
-		ident += c;
+		const char = iter.currentChar() as string;
+		if (/^[a-zA-Z0-9_]$/.exec(char) === null) break;
+		ident += char;
 		iter.next();
 	}
 

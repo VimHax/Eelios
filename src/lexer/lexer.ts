@@ -1,13 +1,17 @@
 import { Token, TokenKind } from './token';
-import { SyntaxError, SyntaxErrorKind } from '../error/syntaxError';
 import { Iter } from './iter';
+import { ExpectedButFound } from '../error/syntaxError';
+
 import scan from './scan/scan';
 
+// Lexer //
+/* This class scans and consumes tokens and contains utility methods which are used by the parser */
+
 export default class Lexer {
-	private readonly iter: Iter;
 	private idx = -1;
 	private winding = false;
 	private windingIdx = 0;
+	private readonly iter: Iter;
 	private readonly processed: Token[] = [];
 
 	public constructor(contents: string) {
@@ -30,38 +34,31 @@ export default class Lexer {
 		return this.processed[this.idx];
 	}
 
-	public peek(): Token | SyntaxError {
+	public peek(): Token {
 		const token = this.processed[this.idx + 1];
 		if (token !== undefined) return token;
 		const consumed = scan(this.iter);
-		if (consumed instanceof Token) {
-			this.processed.push(consumed);
-		}
+		if (consumed instanceof Token) this.processed.push(consumed);
 		return consumed;
 	}
 
-	public consume(): Token | SyntaxError {
+	public consume(): Token {
 		const token = this.processed[this.idx + 1];
 		if (token !== undefined) {
 			this.idx++;
 			return token;
 		}
 		const consumed = scan(this.iter);
-		if (consumed instanceof Token) {
-			this.processed.push(consumed);
-		}
+		if (consumed instanceof Token) this.processed.push(consumed);
 		this.idx++;
 		return consumed;
 	}
 
-	public consumeKind(kinds: TokenKind[]): Token | SyntaxError {
+	public consumeKind(kinds: TokenKind[]): Token {
 		const token = this.processed[this.idx + 1];
 		if (token !== undefined) {
 			if (!kinds.includes(token.getKind())) {
-				return new SyntaxError(SyntaxErrorKind.ExpectedButFound, [
-					kinds,
-					token
-				]);
+				throw new ExpectedButFound(kinds, token);
 			}
 			this.idx++;
 			return token;
@@ -69,13 +66,10 @@ export default class Lexer {
 		const consumed = scan(this.iter);
 		if (consumed instanceof Token) {
 			if (!kinds.includes(consumed.getKind())) {
-				return new SyntaxError(SyntaxErrorKind.ExpectedButFound, [
-					kinds,
-					consumed
-				]);
+				throw new ExpectedButFound(kinds, consumed);
 			}
 		}
-		this.processed.push(consumed as Token);
+		this.processed.push(consumed);
 		this.idx++;
 		return consumed;
 	}

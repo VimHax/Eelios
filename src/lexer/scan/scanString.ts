@@ -1,27 +1,30 @@
 import { Iter } from '../iter';
 import { Token, TokenKind, Span } from '../token';
-import { SyntaxError, SyntaxErrorKind } from '../../error/syntaxError';
+import { UnterminatedStringLiteral } from '../../error/syntaxError';
 
-export default function scanString(iter: Iter): Token | SyntaxError {
-	let str = '';
-	const start = iter.currentIdx();
+// scanString //
+/* Extracts a string from the provided iterator */
+
+export default function scanString(iter: Iter): Token {
+	let string = '';
 	let escaped = false;
 	let terminated = false;
+	const start = iter.currentIdx();
 	iter.next();
 
 	while (!iter.isEnd()) {
-		const c = iter.currentChar() as string;
-		if (c === '"' && !escaped) {
+		const char = iter.currentChar() as string;
+		if (char === '"' && !escaped) {
 			terminated = true;
 			break;
 		}
-		if (c === '\\' && !escaped) {
+		if (char === '\\' && !escaped) {
 			iter.next();
 			escaped = true;
 			continue;
 		}
 		if (escaped) escaped = false;
-		str += c;
+		string += char;
 		iter.next();
 	}
 
@@ -29,12 +32,7 @@ export default function scanString(iter: Iter): Token | SyntaxError {
 	const span = new Span(start, end);
 	iter.next();
 
-	if (terminated) {
-		return new Token(TokenKind.StringLiteral, str, span);
-	}
+	if (terminated) return new Token(TokenKind.StringLiteral, string, span);
 
-	return new SyntaxError(SyntaxErrorKind.UnterminatedStringLiteral, [
-		str,
-		span
-	]);
+	throw new UnterminatedStringLiteral(string, span);
 }

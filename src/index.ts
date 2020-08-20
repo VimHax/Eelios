@@ -1,27 +1,18 @@
-import { Token, TokenKind } from './lexer/token';
-import Lexer from './lexer/lexer';
-import Parser from './parser/parser';
+import Parse from './parser/parse';
 
 import fs from 'fs';
 import util from 'util';
 
 const contents = fs.readFileSync('./test.ee').toString();
 
-const lexer = new Lexer(contents);
-let token = lexer.consume();
-const tokens = [];
-
-while (token instanceof Token && token.getKind() !== TokenKind.EOF) {
+try {
+	const start = new Date();
+	const parsed = Parse(contents);
+	const end = new Date();
 	console.log(
-		`Kind: ${token.getKind()} Value: '${token.getValue()}', Span: ${token
-			.getSpan()
-			.print(contents)}`
+		`Time Taken - ${end.getMilliseconds() - start.getMilliseconds()}`
 	);
-	tokens.push(token);
-	token = lexer.consume();
+	console.log(util.inspect(parsed, false, null, true));
+} catch (err) {
+	err.print(contents);
 }
-
-if (!(token instanceof Token)) token.print(contents);
-
-const parser = new Parser(contents);
-console.log(util.inspect(parser.parse(), false, null, true));

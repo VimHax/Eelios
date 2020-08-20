@@ -1,3 +1,6 @@
+// Span //
+/* This class stores is used to store an area of code in the file contents */
+
 export class Span {
 	private readonly start: number;
 	private readonly end: number;
@@ -18,22 +21,23 @@ export class Span {
 	public print(contents: string): string {
 		const lines = contents.split('\n');
 		let total = 0;
-		let lineNo = 0;
+		let lineNumber = 0;
 		for (const [idx, line] of lines.entries()) {
 			let length = line.length;
 			if (idx + 1 < lines.length) length++;
-			if (total + length > this.start) {
-				break;
-			}
-			lineNo++;
+			if (total + length > this.start) break;
+			lineNumber++;
 			total += length;
 		}
 		const [startCharNo, endCharNo] = [this.start - total, this.end - total];
-		return `Line: ${lineNo + 1}, Character: ${startCharNo + 1}-${
+		return `Line: ${lineNumber + 1}, Character: ${startCharNo + 1}-${
 			endCharNo + 1
 		}`;
 	}
 }
+
+// TokenKind //
+/* The types of tokens */
 
 export enum TokenKind {
 	EOF = 'EOF',
@@ -79,6 +83,9 @@ export enum TokenKind {
 	StringLiteral = 'StringLiteral',
 	BooleanLiteral = 'BooleanLiteral'
 }
+
+// Token //
+/* Used to store an "atomic" element of the language */
 
 export class Token {
 	private readonly kind: TokenKind;

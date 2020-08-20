@@ -1,66 +1,101 @@
 import InterpreterError from './interpreterError';
 import { Span, Token, TokenKind } from '../lexer/token';
 
-export enum SyntaxErrorKind {
-	InvalidCharacter = 'InvalidCharacter',
-	UnterminatedStringLiteral = 'UnterminatedStringLiteral',
-	ExpectedButFound = 'ExpectedButFound',
-	InvalidDataType = 'InvalidDataType',
-	InvalidInstruction = 'InvalidInstruction'
-}
+// InvalidCharacter //
+/* This error will be thrown, by the Lexer, if an invalid character is found */
 
-export class SyntaxError implements InterpreterError {
-	private readonly kind: SyntaxErrorKind;
-	private readonly info: any;
+export class InvalidCharacter implements InterpreterError {
+	private readonly character: string;
+	private readonly span: Span;
 
-	public constructor(kind: SyntaxErrorKind, info: any) {
-		this.kind = kind;
-		this.info = info;
+	public constructor(character: string, span: Span) {
+		this.character = character;
+		this.span = span;
 	}
 
 	public print(contents: string): void {
-		switch (this.kind) {
-			case SyntaxErrorKind.InvalidCharacter: {
-				const [char, span] = this.info as [string, Span];
-				console.log(
-					`Found an invalid character, "${char}", at ${span.print(
-						contents
-					)}`
-				);
-				break;
-			}
-			case SyntaxErrorKind.UnterminatedStringLiteral: {
-				const [str, span] = this.info as [string, Span];
-				console.log(
-					`Found an unterminated string literal, "${str}", at ${span.print(
-						contents
-					)}`
-				);
-				break;
-			}
-			case SyntaxErrorKind.ExpectedButFound: {
-				const [kind, token] = this.info as [TokenKind[], Token];
-				console.log(
-					`Expected a ${kind} token, but found a ${token.getKind()}, at ${token
-						.getSpan()
-						.print(contents)}`
-				);
-				break;
-			}
-			case SyntaxErrorKind.InvalidDataType: {
-				const span = this.info as Span;
-				console.log(
-					`Found an invalid datatype, at ${span.print(contents)}`
-				);
-				break;
-			}
-			case SyntaxErrorKind.InvalidInstruction: {
-				const span = this.info as Span;
-				console.log(
-					`Found an invalid instruction, at ${span.print(contents)}`
-				);
-				break;
-			}
-		}
+		console.log(
+			`Found an invalid character, "${
+				this.character
+			}", at ${this.span.print(contents)}`
+		);
+	}
+}
+
+// UnterminatedStringLiteral //
+/* This error will be thrown, by the Lexer, if a string is not terminated with a " */
+
+export class UnterminatedStringLiteral implements InterpreterError {
+	private readonly string: string;
+	private readonly span: Span;
+
+	public constructor(string: string, span: Span) {
+		this.string = string;
+		this.span = span;
+	}
+
+	public print(contents: string): void {
+		console.log(
+			`Found an unterminated string literal, "${
+				this.string
+			}", at ${this.span.print(contents)}`
+		);
+	}
+}
+
+// ExpectedButFound //
+/* This error will be thrown, by the Lexer, if a specific token was expected but found something else */
+
+export class ExpectedButFound implements InterpreterError {
+	private readonly expected: TokenKind[];
+	private readonly found: Token;
+
+	public constructor(expected: TokenKind[], found: Token) {
+		this.expected = expected;
+		this.found = found;
+	}
+
+	public print(contents: string): void {
+		console.log(
+			`Expected a ${
+				this.expected
+			} token, but found a ${this.found.getKind()}, at ${this.found
+				.getSpan()
+				.print(contents)}`
+		);
+	}
+}
+
+// InvalidDataType //
+/* This error will be thrown, by the Parser, if an invalid data type is found */
+
+export class InvalidDataType implements InterpreterError {
+	private readonly span: Span;
+
+	public constructor(span: Span) {
+		this.span = span;
+	}
+
+	public print(contents: string): void {
+		console.log(
+			`Found an invalid datatype, at ${this.span.print(contents)}`
+		);
+	}
+}
+
+// InvalidInstruction //
+/* This error will be thrown, by the Parser, if an invalid instruction is found */
+
+export class InvalidInstruction implements InterpreterError {
+	private readonly span: Span;
+
+	public constructor(span: Span) {
+		this.span = span;
+	}
+
+	public print(contents: string): void {
+		console.log(
+			`Found an invalid instruction, at ${this.span.print(contents)}`
+		);
 	}
 }
