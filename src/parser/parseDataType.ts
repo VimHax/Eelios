@@ -29,7 +29,7 @@ export default function ParseDataType(lexer: Lexer): DataType {
 			) {
 				throw new InvalidDataType(token.getSpan());
 			}
-			return datatype as DataType;
+			return { type: datatype } as DataType;
 		}
 		case TokenKind.Pipe: {
 			const parameters: DataType[] = [];
@@ -46,7 +46,7 @@ export default function ParseDataType(lexer: Lexer): DataType {
 			lexer.consumeKind([TokenKind.MinusGt]);
 			const returnType = ParseDataType(lexer);
 			return {
-				datatype: 'function',
+				type: 'function',
 				parameters,
 				returnType
 			} as FunctionDataType;
@@ -68,7 +68,7 @@ export default function ParseDataType(lexer: Lexer): DataType {
 			lexer.consumeKind([TokenKind.EqGt]);
 			const returnType = ParseDataType(lexer);
 			return {
-				datatype: 'closure',
+				type: 'closure',
 				parameters,
 				returnType
 			} as ClosureDataType;

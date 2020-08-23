@@ -30,21 +30,21 @@ function Primary(lexer: Lexer): ExpressionNode {
 			lexer.consume();
 			return {
 				value: token.getValue(),
-				datatype: 'string',
+				type: 'string',
 				span: token.getSpan()
 			} as StringLiteralNode;
 		case TokenKind.NumberLiteral:
 			lexer.consume();
 			return {
 				value: token.getValue(),
-				datatype: 'number',
+				type: 'number',
 				span: token.getSpan()
 			} as NumberLiteralNode;
 		case TokenKind.BooleanLiteral:
 			lexer.consume();
 			return {
 				value: token.getValue(),
-				datatype: 'boolean',
+				type: 'boolean',
 				span: token.getSpan()
 			} as BooleanLiteralNode;
 		case TokenKind.Pipe: {
@@ -67,7 +67,7 @@ function Primary(lexer: Lexer): ExpressionNode {
 			const returnType = ParseDataType(lexer);
 			const instruction = ParseInstruction(lexer);
 			return {
-				datatype: 'function',
+				type: 'function',
 				parameters,
 				returnType,
 				instruction,
@@ -114,7 +114,7 @@ function Primary(lexer: Lexer): ExpressionNode {
 				const returnType = ParseDataType(lexer);
 				const instruction = ParseInstruction(lexer);
 				return {
-					datatype: 'closure',
+					type: 'closure',
 					parameters,
 					returnType,
 					instruction,
@@ -144,6 +144,7 @@ function Primary(lexer: Lexer): ExpressionNode {
 			}
 			const endToken = lexer.consumeKind([TokenKind.RBracket]);
 			return {
+				type: 'array',
 				values,
 				span: new Span(start, endToken.getSpan().getEnd())
 			} as ArrayLiteralNode;
@@ -151,6 +152,7 @@ function Primary(lexer: Lexer): ExpressionNode {
 		case TokenKind.Identifier: {
 			lexer.consume();
 			let rvalue: RValueNode = {
+				type: 'variable',
 				name: token.getValue(),
 				span: token.getSpan()
 			} as RValueVariableNode;
@@ -166,6 +168,7 @@ function Primary(lexer: Lexer): ExpressionNode {
 						TokenKind.RBracket
 					]);
 					rvalue = {
+						type: 'indexof',
 						rvalue,
 						index,
 						span: new Span(
@@ -192,6 +195,7 @@ function Primary(lexer: Lexer): ExpressionNode {
 					}
 					const rparenToken = lexer.consumeKind([TokenKind.RParen]);
 					rvalue = {
+						type: 'call',
 						rvalue,
 						arguments: args,
 						span: new Span(
@@ -220,7 +224,7 @@ function Unary(lexer: Lexer): ExpressionNode {
 	const plusToken = lexer.consume();
 	const expr = Unary(lexer);
 	return {
-		operator,
+		type: operator,
 		operand: expr,
 		span: new Span(plusToken.getSpan().getStart(), expr.span.getEnd())
 	} as UnaryNode;
@@ -236,7 +240,7 @@ function Exponentiation(lexer: Lexer): ExpressionNode {
 		lexer.consume();
 		const right = Unary(lexer);
 		expr = {
-			operator: 'power',
+			type: 'power',
 			operands: [expr, right],
 			span: new Span(expr.span.getStart(), right.span.getEnd())
 		} as BinaryNode;
@@ -270,7 +274,7 @@ function Multiplication(lexer: Lexer): ExpressionNode {
 			}
 		}
 		expr = {
-			operator,
+			type: operator,
 			operands: [expr, right],
 			span: new Span(expr.span.getStart(), right.span.getEnd())
 		} as BinaryNode;
@@ -290,7 +294,7 @@ function Addition(lexer: Lexer): ExpressionNode {
 		const right = Multiplication(lexer);
 		const operator = peek.getKind() === TokenKind.Plus ? 'add' : 'subtract';
 		expr = {
-			operator,
+			type: operator,
 			operands: [expr, right],
 			span: new Span(expr.span.getStart(), right.span.getEnd())
 		} as BinaryNode;
@@ -328,7 +332,7 @@ function Comparison(lexer: Lexer): ExpressionNode {
 			}
 		}
 		expr = {
-			operator,
+			type: operator,
 			operands: [expr, right],
 			span: new Span(expr.span.getStart(), right.span.getEnd())
 		} as BinaryNode;
@@ -348,7 +352,7 @@ function Equality(lexer: Lexer): ExpressionNode {
 		const right = Comparison(lexer);
 		const operator = peek.getKind() === TokenKind.Eq ? 'equal' : 'notequal';
 		expr = {
-			operator,
+			type: operator,
 			operands: [expr, right],
 			span: new Span(expr.span.getStart(), right.span.getEnd())
 		} as BinaryNode;
@@ -368,7 +372,7 @@ function LogicGates(lexer: Lexer): ExpressionNode {
 		const right = Equality(lexer);
 		const operator = peek.getKind() === TokenKind.Ampersand ? 'and' : 'or';
 		expr = {
-			operator,
+			type: operator,
 			operands: [expr, right],
 			span: new Span(expr.span.getStart(), right.span.getEnd())
 		} as BinaryNode;

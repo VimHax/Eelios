@@ -1,7 +1,4 @@
 [
-	a <- 1,
-	b <- 1 + 2 * 3,
-	add <- | x : number, y : number | -> number [ ret x + y ],
-	c <- add(a, b),
-	print c
+	a <- "Hi",
+	print a
 ]

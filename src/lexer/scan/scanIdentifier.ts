@@ -30,8 +30,6 @@ export default function scanIdentifier(iter: Iter): Token {
 			return new Token(TokenKind.EvalKW, null, span);
 		case 'exec':
 			return new Token(TokenKind.ExecKW, null, span);
-		case 'ret':
-			return new Token(TokenKind.RetKW, null, span);
 		case 'if':
 			return new Token(TokenKind.IfKW, null, span);
 		case 'else':

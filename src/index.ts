@@ -1,4 +1,5 @@
 import Parse from './parser/parse';
+import Evaluator from './evaluator/evaluator';
 
 import fs from 'fs';
 import util from 'util';
@@ -13,6 +14,10 @@ try {
 		`Time Taken - ${end.getMilliseconds() - start.getMilliseconds()}`
 	);
 	console.log(util.inspect(parsed, false, null, true));
+	const evaluator = new Evaluator(parsed);
+	const res = evaluator.evaluate();
+	console.log(res);
 } catch (err) {
+	console.log(err);
 	err.print(contents);
 }

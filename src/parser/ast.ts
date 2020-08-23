@@ -1,46 +1,71 @@
-import { Token, Span } from '../lexer/token';
+import { Span } from '../lexer/token';
 
 // DataType //
 
 export type DataType =
-	| 'string'
-	| 'number'
-	| 'boolean'
-	| 'instruction'
+	| AnyDataType
+	| StringDataType
+	| NumberDataType
+	| BooleanDataType
+	| InstructionDataType
 	| FunctionDataType
 	| ClosureDataType
 	| ArrayDataType;
 
+export interface AnyDataType {
+	type: 'any';
+}
+
+export interface StringDataType {
+	type: 'string';
+}
+
+export interface NumberDataType {
+	type: 'number';
+}
+
+export interface BooleanDataType {
+	type: 'boolean';
+}
+
+export interface InstructionDataType {
+	type: 'instruction';
+}
+
 export interface FunctionDataType {
-	datatype: 'function';
+	type: 'function';
 	parameters: DataType[];
 	returnType: DataType;
 }
 
 export interface ClosureDataType {
-	datatype: 'closure';
+	type: 'closure';
 	parameters: DataType[];
 	returnType: DataType;
 }
 
 export interface ArrayDataType {
+	type: 'array';
 	datatype: DataType;
 }
 
 // RValue Node //
 
 export interface RValueVariableNode {
+	type: 'variable';
 	name: string;
 	span: Span;
 }
 
 export interface RValueIndexOfNode {
+	type: 'indexof';
 	rvalue: RValueNode;
 	index: ExpressionNode;
 	span: Span;
 }
 
 export interface RValueCallNode {
+	type: 'call';
 	rvalue: RValueNode;
 	arguments: ExpressionNode[];
 	span: Span;
@@ -54,25 +79,25 @@ export type RValueNode =
 // Literal Node //
 
 export interface StringLiteralNode {
+	type: 'string';
 	value: string;
-	datatype: 'string';
 	span: Span;
 }
 
 export interface NumberLiteralNode {
+	type: 'number';
 	value: number;
-	datatype: 'number';
 	span: Span;
 }
 
 export interface BooleanLiteralNode {
+	type: 'boolean';
 	value: boolean;
-	datatype: 'boolean';
 	span: Span;
 }
 
 export interface FunctionLiteralNode {
-	datatype: 'function';
+	type: 'function';
 	parameters: [string, DataType][];
 	returnType: DataType;
 	instruction: InstructionNode;
@@ -80,7 +105,7 @@ export interface FunctionLiteralNode {
 }
 
 export interface ClosureLiteralNode {
-	datatype: 'closure';
+	type: 'closure';
 	parameters: [string, DataType][];
 	returnType: DataType;
 	instruction: InstructionNode;
@@ -88,6 +113,7 @@ export interface ClosureLiteralNode {
 }
 
 export interface ArrayLiteralNode {
+	type: 'array';
 	values: ExpressionNode[];
 	span: Span;
 }
@@ -97,7 +123,7 @@ export interface ArrayLiteralNode {
 export type UnaryOperator = 'plus' | 'minus';
 
 export interface UnaryNode {
-	operator: UnaryOperator;
+	type: UnaryOperator;
 	operand: ExpressionNode;
 	span: Span;
 }
@@ -119,7 +145,7 @@ export type BinaryOperator =
 	| 'greaterthanorequal';
 
 export interface BinaryNode {
-	operator: BinaryOperator;
+	type: BinaryOperator;
 	operands: [ExpressionNode, ExpressionNode];
 	span: Span;
 }
@@ -132,15 +158,20 @@ export type ExpressionNode =
 	| ArrayLiteralNode
 	| UnaryNode
 	| BinaryNode
-	| InstructionNode;
+	| InstructionNode
+	| FunctionLiteralNode
+	| ClosureLiteralNode;
 
 // LValue Node //
 
 export interface LValueVariableNode {
-	name: Token;
+	type: 'variable';
+	name: string;
+	span: Span;
 }
 
 export interface LValueIndexOfNode {
+	type: 'indexof';
 	lvalue: LValueNode;
 	index: ExpressionNode;
 	span: Span;
@@ -151,11 +182,13 @@ export type LValueNode = LValueVariableNode | LValueIndexOfNode;
 // Instruction Node //
 
 export interface PrintInstructionNode {
+	type: 'print';
 	expressions: ExpressionNode[];
 	span: Span;
 }
 
 export interface AssignInstructionNode {
+	type: 'assign';
 	lvalue: LValueNode;
 	expression: ExpressionNode;
 	span: Span;
@@ -167,27 +200,24 @@ export interface EvaluateInstructionNode {
 	span: Span;
 }
 
-export interface ReturnInstructionNode {
-	type: 'ret';
+export interface ExecuteInstructionNode {
+	type: 'exec';
 	expression: ExpressionNode;
 	span: Span;
 }
 
-export interface ExecuteInstructionNode {
-	instruction: InstructionNode;
-	span: Span;
-}
-
 export interface IfInstructionNode {
+	type: 'if';
 	condition: ExpressionNode;
-	thenInstruction: InstructionNode;
-	elseInstruction: InstructionNode | null;
+	thenExpression: ExpressionNode;
+	elseExpression: ExpressionNode | null;
 	span: Span;
 }
 
 export interface WhileInstructionNode {
+	type: 'while';
 	condition: ExpressionNode;
-	body: InstructionNode;
+	body: ExpressionNode;
 	span: Span;
 }
 
@@ -195,7 +225,6 @@ export type InstructionNode =
 	| PrintInstructionNode
 	| AssignInstructionNode
 	| EvaluateInstructionNode
-	| ReturnInstructionNode
 	| ExecuteInstructionNode
 	| ArrayLiteralNode
 	| IfInstructionNode

@@ -74,7 +74,6 @@ export enum TokenKind {
 	PrintKW = 'PrintKW',
 	EvalKW = 'EvalKW',
 	ExecKW = 'ExecKW',
-	RetKW = 'RetKW',
 	IfKW = 'IfKW',
 	ElseKW = 'ElseKW',
 	WhileKW = 'WhileKW',

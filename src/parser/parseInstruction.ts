@@ -5,7 +5,6 @@ import {
 	InstructionNode,
 	PrintInstructionNode,
 	EvaluateInstructionNode,
-	ReturnInstructionNode,
 	ExecuteInstructionNode,
 	IfInstructionNode,
 	WhileInstructionNode,
@@ -34,6 +33,7 @@ export default function ParseInstruction(lexer: Lexer): InstructionNode {
 				peek = lexer.peek();
 			}
 			return {
+				type: 'print',
 				expressions: exprs,
 				span: new Span(
 					token.getSpan().getStart(),
@@ -49,19 +49,12 @@ export default function ParseInstruction(lexer: Lexer): InstructionNode {
 				span: new Span(token.getSpan().getStart(), expr.span.getEnd())
 			} as EvaluateInstructionNode;
 		}
-		case TokenKind.RetKW: {
-			const expr = ParseExpression(lexer);
-			return {
-				type: 'ret',
-				expression: expr,
-				span: new Span(token.getSpan().getStart(), expr.span.getEnd())
-			} as ReturnInstructionNode;
-		}
 		case TokenKind.ExecKW: {
 			const instruction = ParseInstruction(lexer);
 			if (instruction instanceof SyntaxError) return instruction;
 			return {
-				instruction,
+				type: 'exec',
+				expression: instruction,
 				span: new Span(
 					token.getSpan().getStart(),
 					instruction.span.getEnd()
@@ -76,9 +69,10 @@ export default function ParseInstruction(lexer: Lexer): InstructionNode {
 				lexer.consume();
 				const else_ins = ParseInstruction(lexer);
 				return {
+					type: 'if',
 					condition,
-					thenInstruction: then_ins,
-					elseInstruction: else_ins,
+					thenExpression: then_ins,
+					elseExpression: else_ins,
 					span: new Span(
 						token.getSpan().getStart(),
 						else_ins.span.getEnd()
@@ -86,9 +80,10 @@ export default function ParseInstruction(lexer: Lexer): InstructionNode {
 				} as IfInstructionNode;
 			}
 			return {
+				type: 'if',
 				condition,
-				thenInstruction: then_ins,
-				elseInstruction: null,
+				thenExpression: then_ins,
+				elseExpression: null,
 				span: new Span(
 					token.getSpan().getStart(),
 					then_ins.span.getEnd()
@@ -99,6 +94,7 @@ export default function ParseInstruction(lexer: Lexer): InstructionNode {
 			const condition = ParseExpression(lexer);
 			const body = ParseInstruction(lexer);
 			return {
+				type: 'while',
 				condition,
 				body,
 				span: new Span(token.getSpan().getStart(), body.span.getEnd())
@@ -106,6 +102,7 @@ export default function ParseInstruction(lexer: Lexer): InstructionNode {
 		}
 		case TokenKind.Identifier: {
 			let lvalue: LValueNode = {
+				type: 'variable',
 				name: token.getValue(),
 				span: token.getSpan()
 			} as LValueVariableNode;
@@ -116,6 +113,7 @@ export default function ParseInstruction(lexer: Lexer): InstructionNode {
 				const index = ParseExpression(lexer);
 				const rBracketToken = lexer.consumeKind([TokenKind.RBracket]);
 				lvalue = {
+					type: 'indexof',
 					lvalue,
 					index,
 					span: new Span(
@@ -128,6 +126,7 @@ export default function ParseInstruction(lexer: Lexer): InstructionNode {
 			lexer.consumeKind([TokenKind.LtMinus]);
 			const expr = ParseExpression(lexer);
 			return {
+				type: 'assign',
 				lvalue,
 				expression: expr,
 				span: new Span(token.getSpan().getStart(), expr.span.getEnd())
@@ -151,6 +150,7 @@ export default function ParseInstruction(lexer: Lexer): InstructionNode {
 			}
 			const endToken = lexer.consumeKind([TokenKind.RBracket]);
 			return {
+				type: 'array',
 				values,
 				span: new Span(start, endToken.getSpan().getEnd())
 			} as ArrayLiteralNode;
