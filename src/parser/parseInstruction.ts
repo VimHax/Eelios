@@ -1,6 +1,9 @@
 import Lexer from '../lexer/lexer';
+import ParseExpression from './parseExpression';
+
 import { Span, TokenKind } from '../lexer/token';
 import { InvalidInstruction } from '../error/syntaxError';
+
 import {
 	InstructionNode,
 	PrintInstructionNode,
@@ -8,150 +11,115 @@ import {
 	ExecuteInstructionNode,
 	IfInstructionNode,
 	WhileInstructionNode,
-	ArrayLiteralNode,
 	LValueNode,
 	LValueVariableNode,
 	LValueIndexOfNode,
 	AssignInstructionNode,
 	ExpressionNode
 } from './ast';
-import ParseExpression from './parseExpression';
 
 // ParseInstruction //
-/* Parses and returns an instruction */
+/* Parses and returns an instruction node */
 
 export default function ParseInstruction(lexer: Lexer): InstructionNode {
 	const token = lexer.consume();
 	switch (token.getKind()) {
+		// Parse Print Instructions //
 		case TokenKind.PrintKW: {
 			const expr = ParseExpression(lexer);
 			const exprs = [expr];
 			let peek = lexer.peek();
-			while (peek.getKind() === TokenKind.Dot) {
+			while (peek.isKind([TokenKind.Dot])) {
 				lexer.consume();
 				const expr = ParseExpression(lexer);
 				exprs.push(expr);
 				peek = lexer.peek();
 			}
-			return {
-				type: 'print',
-				expressions: exprs,
-				span: new Span(
+			return new PrintInstructionNode(
+				exprs,
+				new Span(
 					token.getSpan().getStart(),
-					exprs[exprs.length - 1].span.getEnd()
+					exprs[exprs.length - 1].getSpan().getEnd()
 				)
-			} as PrintInstructionNode;
+			);
 		}
+		// Parse Eval Instructions //
 		case TokenKind.EvalKW: {
 			const expr = ParseExpression(lexer);
-			return {
-				type: 'eval',
-				expression: expr,
-				span: new Span(token.getSpan().getStart(), expr.span.getEnd())
-			} as EvaluateInstructionNode;
+			return new EvaluateInstructionNode(
+				expr,
+				new Span(token.getSpan().getStart(), expr.getSpan().getEnd())
+			);
 		}
+		// Parse Exec Instructions //
 		case TokenKind.ExecKW: {
 			const instruction = ParseExpression(lexer);
-			return {
-				type: 'exec',
-				expression: instruction,
-				span: new Span(
+			return new ExecuteInstructionNode(
+				instruction,
+				new Span(
 					token.getSpan().getStart(),
-					instruction.span.getEnd()
+					instruction.getSpan().getEnd()
 				)
-			} as ExecuteInstructionNode;
+			);
 		}
+		// Parse If Instructions //
 		case TokenKind.IfKW: {
 			const condition = ParseExpression(lexer);
-			const then_ins = ParseInstruction(lexer);
+			const thenExpression = ParseExpression(lexer);
 			const peek = lexer.peek();
-			if (peek.getKind() === TokenKind.ElseKW) {
+			let elseExpression: ExpressionNode | null = null;
+			if (peek.isKind([TokenKind.ElseKW])) {
 				lexer.consume();
-				const else_ins = ParseInstruction(lexer);
-				return {
-					type: 'if',
-					condition,
-					thenExpression: then_ins,
-					elseExpression: else_ins,
-					span: new Span(
-						token.getSpan().getStart(),
-						else_ins.span.getEnd()
-					)
-				} as IfInstructionNode;
+				elseExpression = ParseExpression(lexer);
 			}
-			return {
-				type: 'if',
+			return new IfInstructionNode(
 				condition,
-				thenExpression: then_ins,
-				elseExpression: null,
-				span: new Span(
+				thenExpression,
+				elseExpression,
+				new Span(
 					token.getSpan().getStart(),
-					then_ins.span.getEnd()
+					thenExpression.getSpan().getEnd()
 				)
-			} as IfInstructionNode;
+			);
 		}
+		// Parse While Instructions //
 		case TokenKind.WhileKW: {
 			const condition = ParseExpression(lexer);
-			const body = ParseInstruction(lexer);
-			return {
-				type: 'while',
+			const body = ParseExpression(lexer);
+			return new WhileInstructionNode(
 				condition,
 				body,
-				span: new Span(token.getSpan().getStart(), body.span.getEnd())
-			} as WhileInstructionNode;
+				new Span(token.getSpan().getStart(), body.getSpan().getEnd())
+			);
 		}
+		// Parse Assign Instructions //
 		case TokenKind.Identifier: {
-			let lvalue: LValueNode = {
-				type: 'variable',
-				name: token.getValue(),
-				span: token.getSpan()
-			} as LValueVariableNode;
+			let lvalue: LValueNode = new LValueVariableNode(
+				token.getValue(),
+				token.getSpan()
+			);
 			let peek = lexer.peek();
-			while (peek.getKind() === TokenKind.LBracket) {
+			while (peek.isKind([TokenKind.LBracket])) {
 				const lBracketToken = lexer.consume();
 				const index = ParseExpression(lexer);
-				const rBracketToken = lexer.consumeKind([TokenKind.RBracket]);
-				lvalue = {
-					type: 'indexof',
+				const rBracketToken = lexer.consumeKind(TokenKind.RBracket);
+				lvalue = new LValueIndexOfNode(
 					lvalue,
 					index,
-					span: new Span(
+					new Span(
 						lBracketToken.getSpan().getStart(),
 						rBracketToken.getSpan().getEnd()
 					)
-				} as LValueIndexOfNode;
+				);
 				peek = lexer.peek();
 			}
-			lexer.consumeKind([TokenKind.LtMinus]);
+			lexer.consumeKind(TokenKind.LtMinus);
 			const expr = ParseExpression(lexer);
-			return {
-				type: 'assign',
+			return new AssignInstructionNode(
 				lvalue,
-				expression: expr,
-				span: new Span(token.getSpan().getStart(), expr.span.getEnd())
-			} as AssignInstructionNode;
-		}
-		case TokenKind.LBracket: {
-			const start = token.getSpan().getStart();
-			const values: ExpressionNode[] = [];
-			let first = true;
-			let peek = lexer.peek();
-			while (
-				![TokenKind.EOF, TokenKind.RBracket].includes(peek.getKind())
-			) {
-				if (first) first = false;
-				else lexer.consumeKind([TokenKind.Comma]);
-				// eslint-disable-next-line @typescript-eslint/no-use-before-define
-				const instruction = ParseExpression(lexer);
-				values.push(instruction);
-				peek = lexer.peek();
-			}
-			const endToken = lexer.consumeKind([TokenKind.RBracket]);
-			return {
-				type: 'array',
-				values,
-				span: new Span(start, endToken.getSpan().getEnd())
-			} as ArrayLiteralNode;
+				expr,
+				new Span(token.getSpan().getStart(), expr.getSpan().getEnd())
+			);
 		}
 	}
 	throw new InvalidInstruction(token.getSpan());

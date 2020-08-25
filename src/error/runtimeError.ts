@@ -1,4 +1,7 @@
+import chalk from 'chalk';
+
 import InterpreterError from './interpreterError';
+
 import { Span } from '../lexer/token';
 import { DataType } from '../parser/ast';
 
@@ -16,7 +19,9 @@ export class UndefinedVariable implements InterpreterError {
 
 	public print(contents: string): void {
 		console.log(
-			`Undefined variable, ${this.name}, at ${this.span.print(contents)}`
+			`${chalk.red.bold('ERROR >')} Undefined variable, ${chalk.blue(
+				this.name
+			)}, at ${this.span.print(contents)}`
 		);
 	}
 }
@@ -37,19 +42,21 @@ export class ExpectedDataTypesButFound implements InterpreterError {
 
 	public print(contents: string): void {
 		console.log(
-			`Expected a value of type ${
-				this.expected
-			}, but found a value of type ${this.found}, at ${this.span.print(
-				contents
-			)}`
+			`${chalk.red.bold(
+				'ERROR >'
+			)} Expected a value of type ${this.expected
+				.map(dt => chalk.blue(dt.print()))
+				.join(' OR ')}, but found a value of type ${chalk.blue(
+				this.found.print()
+			)}, at ${this.span.print(contents)}`
 		);
 	}
 }
 
-// OutOfBounds //
-/* This error will be thrown, by the Evaluator, if the program tried to access a index out of bounds */
+// InvalidIndex //
+/* This error will be thrown, by the Evaluator, if the program tried to access an undefined element */
 
-export class OutOfBounds implements InterpreterError {
+export class InvalidIndex implements InterpreterError {
 	private readonly index: number;
 	private readonly span: Span;
 
@@ -60,9 +67,9 @@ export class OutOfBounds implements InterpreterError {
 
 	public print(contents: string): void {
 		console.log(
-			`Index ${this.index}, at ${this.span.print(
-				contents
-			)}, is out of bounds`
+			`${chalk.red.bold('ERROR >')} Element at the index ${chalk.blue(
+				this.index
+			)}, at ${this.span.print(contents)}, is undefined`
 		);
 	}
 }
@@ -79,7 +86,9 @@ export class InvalidFunction implements InterpreterError {
 
 	public print(contents: string): void {
 		console.log(
-			`The function call, at ${this.span.print(
+			`${chalk.red.bold(
+				'ERROR >'
+			)} The function call, at ${this.span.print(
 				contents
 			)}, didn't evaluate to a value`
 		);
@@ -98,7 +107,9 @@ export class InvalidClosure implements InterpreterError {
 
 	public print(contents: string): void {
 		console.log(
-			`The closure call, at ${this.span.print(
+			`${chalk.red.bold(
+				'ERROR >'
+			)} The closure call, at ${this.span.print(
 				contents
 			)}, didn't evaluate to a value`
 		);
@@ -117,7 +128,7 @@ export class InvalidInstruction implements InterpreterError {
 
 	public print(contents: string): void {
 		console.log(
-			`The instruction, at ${this.span.print(
+			`${chalk.red.bold('ERROR >')} The instruction, at ${this.span.print(
 				contents
 			)}, didn't evaluate to a value`
 		);
@@ -136,28 +147,9 @@ export class InvalidSelf implements InterpreterError {
 
 	public print(contents: string): void {
 		console.log(
-			`Use of self, at ${this.span.print(
+			`${chalk.red.bold('ERROR >')} Use of self, at ${this.span.print(
 				contents
 			)}, is invalid as it's not being used inside of a function or closure`
-		);
-	}
-}
-
-// CannotCompare //
-/* This error will be thrown, by the Evaluator, if a function didn't evaluate to a value */
-
-export class CannotCompare implements InterpreterError {
-	private readonly span: Span;
-
-	public constructor(span: Span) {
-		this.span = span;
-	}
-
-	public print(contents: string): void {
-		console.log(
-			`Cannot compare values of type Array, Instruction, Function or Closure, at ${this.span.print(
-				contents
-			)}`
 		);
 	}
 }
@@ -176,9 +168,32 @@ export class InvalidArguments implements InterpreterError {
 
 	public print(contents: string): void {
 		console.log(
-			`Provided more or less than ${
+			`${chalk.red.bold(
+				'ERROR >'
+			)} Provided more or less than ${chalk.blue(
 				this.argLength
-			} arguments to the function or closure, at ${this.span.print(
+			)} arguments to the function or closure, at ${this.span.print(
+				contents
+			)}`
+		);
+	}
+}
+
+// InvalidExec //
+/* This error will be thrown, by the Evaluator, if the caller used the exec instruction outside of an expression */
+
+export class InvalidExec implements InterpreterError {
+	private readonly span: Span;
+
+	public constructor(span: Span) {
+		this.span = span;
+	}
+
+	public print(contents: string): void {
+		console.log(
+			`${chalk.red.bold(
+				'ERROR >'
+			)} Use of exec instruction outside of an expression, at ${this.span.print(
 				contents
 			)}`
 		);

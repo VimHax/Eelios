@@ -1,8 +1,8 @@
+import scan from './scan/scan';
+
 import { Token, TokenKind } from './token';
 import { Iter } from './iter';
 import { ExpectedButFound } from '../error/syntaxError';
-
-import scan from './scan/scan';
 
 // Lexer //
 /* This class scans and consumes tokens and contains utility methods which are used by the parser */
@@ -54,19 +54,19 @@ export default class Lexer {
 		return consumed;
 	}
 
-	public consumeKind(kinds: TokenKind[]): Token {
+	public consumeKind(kind: TokenKind): Token {
 		const token = this.processed[this.idx + 1];
 		if (token !== undefined) {
-			if (!kinds.includes(token.getKind())) {
-				throw new ExpectedButFound(kinds, token);
+			if (!token.isKind([kind])) {
+				throw new ExpectedButFound(kind, token);
 			}
 			this.idx++;
 			return token;
 		}
 		const consumed = scan(this.iter);
 		if (consumed instanceof Token) {
-			if (!kinds.includes(consumed.getKind())) {
-				throw new ExpectedButFound(kinds, consumed);
+			if (!consumed.isKind([kind])) {
+				throw new ExpectedButFound(kind, consumed);
 			}
 		}
 		this.processed.push(consumed);

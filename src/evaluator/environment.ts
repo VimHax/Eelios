@@ -2,6 +2,9 @@ import { Variable } from './variable';
 import { Span } from '../lexer/token';
 import { UndefinedVariable } from '../error/runtimeError';
 
+// Environment //
+/* A linked list of variables */
+
 export default class Environment {
 	private readonly parent: Environment | null;
 	private readonly variable: Variable;

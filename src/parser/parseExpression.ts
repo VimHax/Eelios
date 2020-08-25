@@ -1,5 +1,10 @@
 import Lexer from '../lexer/lexer';
+import ParseDataType from './parseDataType';
+import ParseInstruction from './parseInstruction';
+
 import { TokenKind, Span } from '../lexer/token';
+import { InvalidParameter } from '../error/syntaxError';
+
 import {
 	ExpressionNode,
 	StringLiteralNode,
@@ -14,218 +19,240 @@ import {
 	RValueIndexOfNode,
 	RValueCallNode,
 	UnaryNode,
-	BinaryNode
+	BinaryNode,
+	BinaryOperator,
+	RValueGroupingNode
 } from './ast';
 
-import ParseDataType from './parseDataType';
-import ParseInstruction from './parseInstruction';
-import { InvalidParameter } from '../error/syntaxError';
-
 // Primary //
-/* Parses literals, variables, arrays & groupings */
+/* Parses literals, rvalues, arrays & groupings */
 
 function Primary(lexer: Lexer): ExpressionNode {
 	const token = lexer.peek();
 	switch (token.getKind()) {
+		// Parse String Literals //
 		case TokenKind.StringLiteral:
 			lexer.consume();
-			return {
-				value: token.getValue(),
-				type: 'string',
-				span: token.getSpan()
-			} as StringLiteralNode;
+			return new StringLiteralNode(token.getValue(), token.getSpan());
+		// Parse Number Literals //
 		case TokenKind.NumberLiteral:
 			lexer.consume();
-			return {
-				value: token.getValue(),
-				type: 'number',
-				span: token.getSpan()
-			} as NumberLiteralNode;
+			return new NumberLiteralNode(token.getValue(), token.getSpan());
+		// Parse Boolean Literals //
 		case TokenKind.BooleanLiteral:
 			lexer.consume();
-			return {
-				value: token.getValue(),
-				type: 'boolean',
-				span: token.getSpan()
-			} as BooleanLiteralNode;
+			return new BooleanLiteralNode(token.getValue(), token.getSpan());
+		// Parse Function Literals //
 		case TokenKind.Pipe: {
 			lexer.consume();
 			const start = token.getSpan().getStart();
 			const parameters: [string, DataType][] = [];
 			let first = true;
 			let peek = lexer.peek();
-			while (![TokenKind.EOF, TokenKind.Pipe].includes(peek.getKind())) {
+			while (!peek.isKind([TokenKind.EOF, TokenKind.Pipe])) {
 				if (first) first = false;
-				else lexer.consumeKind([TokenKind.Comma]);
-				const name = lexer.consumeKind([TokenKind.Identifier]);
+				else lexer.consumeKind(TokenKind.Comma);
+				const name = lexer.consumeKind(TokenKind.Identifier);
 				if (parameters.find(p => p[0] === name.getValue())) {
 					throw new InvalidParameter(name.getValue(), name.getSpan());
 				}
-				lexer.consumeKind([TokenKind.Colon]);
+				lexer.consumeKind(TokenKind.Colon);
 				const datatype = ParseDataType(lexer);
 				parameters.push([name.getValue() as string, datatype]);
 				peek = lexer.peek();
 			}
-			lexer.consumeKind([TokenKind.Pipe]);
-			lexer.consumeKind([TokenKind.MinusGt]);
+			lexer.consumeKind(TokenKind.Pipe);
+			lexer.consumeKind(TokenKind.MinusGt);
 			const returnType = ParseDataType(lexer);
-			const instruction = ParseInstruction(lexer);
-			return {
-				type: 'function',
+			// eslint-disable-next-line @typescript-eslint/no-use-before-define
+			const instruction = ParseExpression(lexer);
+			return new FunctionLiteralNode(
 				parameters,
 				returnType,
 				instruction,
-				span: new Span(start, instruction.span.getEnd())
-			} as FunctionLiteralNode;
+				new Span(start, instruction.getSpan().getEnd())
+			);
 		}
+		// Parse Closure Literals & Groupings //
 		case TokenKind.LParen: {
 			lexer.consume();
+			// Check Whether This Is A Closure Literal //
 			let isClosure = false;
 			let peek = lexer.peek();
-			if (peek.getKind() === TokenKind.RParen) {
+			if (peek.isKind([TokenKind.RParen])) {
 				isClosure = true;
 			} else {
 				lexer.wind();
-				while (
-					![TokenKind.EOF, TokenKind.RParen].includes(peek.getKind())
-				) {
-					if (peek.getKind() === TokenKind.Colon) {
-						isClosure = true;
-						break;
-					}
+				if (peek.isKind([TokenKind.Identifier])) {
 					lexer.consume();
 					peek = lexer.peek();
+					if (peek.isKind([TokenKind.Colon])) {
+						isClosure = true;
+					}
 				}
 				lexer.unwind();
 			}
+			// Parse Closure Literal //
 			if (isClosure) {
 				const start = token.getSpan().getStart();
 				const parameters: [string, DataType][] = [];
 				let first = true;
-				while (
-					![TokenKind.EOF, TokenKind.RParen].includes(peek.getKind())
-				) {
+				peek = lexer.peek();
+				while (!peek.isKind([TokenKind.EOF, TokenKind.RParen])) {
 					if (first) first = false;
-					else lexer.consumeKind([TokenKind.Comma]);
-					const name = lexer.consumeKind([TokenKind.Identifier]);
+					else lexer.consumeKind(TokenKind.Comma);
+					const name = lexer.consumeKind(TokenKind.Identifier);
 					if (parameters.find(p => p[0] === name.getValue())) {
 						throw new InvalidParameter(
 							name.getValue(),
 							name.getSpan()
 						);
 					}
-					lexer.consumeKind([TokenKind.Colon]);
+					lexer.consumeKind(TokenKind.Colon);
 					const datatype = ParseDataType(lexer);
 					parameters.push([name.getValue() as string, datatype]);
 					peek = lexer.peek();
 				}
-				lexer.consumeKind([TokenKind.RParen]);
-				lexer.consumeKind([TokenKind.EqGt]);
+				lexer.consumeKind(TokenKind.RParen);
+				lexer.consumeKind(TokenKind.EqGt);
 				const returnType = ParseDataType(lexer);
-				const instruction = ParseInstruction(lexer);
-				return {
-					type: 'closure',
+				// eslint-disable-next-line @typescript-eslint/no-use-before-define
+				const instruction = ParseExpression(lexer);
+				return new ClosureLiteralNode(
 					parameters,
 					returnType,
 					instruction,
-					span: new Span(start, instruction.span.getEnd())
-				} as ClosureLiteralNode;
+					new Span(start, instruction.getSpan().getEnd())
+				);
 			}
+			// Parse Grouping //
 			// eslint-disable-next-line @typescript-eslint/no-use-before-define
 			const expr = ParseExpression(lexer);
-			lexer.consumeKind([TokenKind.RParen]);
-			return expr;
+			lexer.consumeKind(TokenKind.RParen);
+			let rvalue: RValueNode = new RValueGroupingNode(
+				expr,
+				expr.getSpan()
+			);
+			peek = lexer.peek();
+			while (peek.isKind([TokenKind.LBracket, TokenKind.LParen])) {
+				if (peek.isKind([TokenKind.LBracket])) {
+					lexer.consume();
+					// eslint-disable-next-line @typescript-eslint/no-use-before-define
+					const index = ParseExpression(lexer);
+					const rBracketToken = lexer.consumeKind(TokenKind.RBracket);
+					rvalue = new RValueIndexOfNode(
+						rvalue,
+						index,
+						new Span(
+							rvalue.getSpan().getStart(),
+							rBracketToken.getSpan().getEnd()
+						)
+					);
+				} else {
+					lexer.consume();
+					let first = true;
+					const args: ExpressionNode[] = [];
+					let peek = lexer.peek();
+					while (!peek.isKind([TokenKind.EOF, TokenKind.RParen])) {
+						if (first) first = false;
+						else lexer.consumeKind(TokenKind.Comma);
+						// eslint-disable-next-line @typescript-eslint/no-use-before-define
+						const argument = ParseExpression(lexer);
+						args.push(argument);
+						peek = lexer.peek();
+					}
+					const rparenToken = lexer.consumeKind(TokenKind.RParen);
+					rvalue = new RValueCallNode(
+						rvalue,
+						args,
+						new Span(
+							rvalue.getSpan().getStart(),
+							rparenToken.getSpan().getEnd()
+						)
+					);
+				}
+				peek = lexer.peek();
+			}
+			return rvalue;
 		}
+		// Parse Array Literals //
 		case TokenKind.LBracket: {
 			lexer.consume();
 			const start = token.getSpan().getStart();
 			const values: ExpressionNode[] = [];
 			let first = true;
 			let peek = lexer.peek();
-			while (
-				![TokenKind.EOF, TokenKind.RBracket].includes(peek.getKind())
-			) {
+			while (!peek.isKind([TokenKind.EOF, TokenKind.RBracket])) {
 				if (first) first = false;
-				else lexer.consumeKind([TokenKind.Comma]);
+				else lexer.consumeKind(TokenKind.Comma);
 				// eslint-disable-next-line @typescript-eslint/no-use-before-define
 				const expr = ParseExpression(lexer);
 				values.push(expr);
 				peek = lexer.peek();
 			}
-			const endToken = lexer.consumeKind([TokenKind.RBracket]);
-			return {
-				type: 'array',
+			const endToken = lexer.consumeKind(TokenKind.RBracket);
+			return new ArrayLiteralNode(
 				values,
-				span: new Span(start, endToken.getSpan().getEnd())
-			} as ArrayLiteralNode;
+				new Span(start, endToken.getSpan().getEnd())
+			);
 		}
+		// Parse RValues //
 		case TokenKind.Identifier: {
 			// Check If Assign Instruction //
 			lexer.wind();
 			lexer.consume();
 			let peek = lexer.peek();
-			while (peek.getKind() === TokenKind.LBracket) {
+			while (peek.isKind([TokenKind.LBracket])) {
 				lexer.consume();
 				// eslint-disable-next-line @typescript-eslint/no-use-before-define
 				ParseExpression(lexer);
-				lexer.consumeKind([TokenKind.RBracket]);
+				lexer.consumeKind(TokenKind.RBracket);
 				peek = lexer.peek();
 			}
 			lexer.unwind();
-			if (peek.getKind() === TokenKind.LtMinus) break;
+			if (peek.isKind([TokenKind.LtMinus])) break;
 			lexer.consume();
-			let rvalue: RValueNode = {
-				type: 'variable',
-				name: token.getValue(),
-				span: token.getSpan()
-			} as RValueVariableNode;
+			let rvalue: RValueNode = new RValueVariableNode(
+				token.getValue(),
+				token.getSpan()
+			);
 			peek = lexer.peek();
-			while (
-				[TokenKind.LBracket, TokenKind.LParen].includes(peek.getKind())
-			) {
-				if (peek.getKind() === TokenKind.LBracket) {
-					const lBracketToken = lexer.consume();
+			while (peek.isKind([TokenKind.LBracket, TokenKind.LParen])) {
+				if (peek.isKind([TokenKind.LBracket])) {
+					lexer.consume();
 					// eslint-disable-next-line @typescript-eslint/no-use-before-define
 					const index = ParseExpression(lexer);
-					const rBracketToken = lexer.consumeKind([
-						TokenKind.RBracket
-					]);
-					rvalue = {
-						type: 'indexof',
+					const rBracketToken = lexer.consumeKind(TokenKind.RBracket);
+					rvalue = new RValueIndexOfNode(
 						rvalue,
 						index,
-						span: new Span(
-							lBracketToken.getSpan().getStart(),
+						new Span(
+							rvalue.getSpan().getStart(),
 							rBracketToken.getSpan().getEnd()
 						)
-					} as RValueIndexOfNode;
+					);
 				} else {
-					const lparenToken = lexer.consume();
+					lexer.consume();
 					let first = true;
 					const args: ExpressionNode[] = [];
 					let peek = lexer.peek();
-					while (
-						![TokenKind.EOF, TokenKind.RParen].includes(
-							peek.getKind()
-						)
-					) {
+					while (!peek.isKind([TokenKind.EOF, TokenKind.RParen])) {
 						if (first) first = false;
-						else lexer.consumeKind([TokenKind.Comma]);
+						else lexer.consumeKind(TokenKind.Comma);
 						// eslint-disable-next-line @typescript-eslint/no-use-before-define
 						const argument = ParseExpression(lexer);
 						args.push(argument);
 						peek = lexer.peek();
 					}
-					const rparenToken = lexer.consumeKind([TokenKind.RParen]);
-					rvalue = {
-						type: 'call',
+					const rparenToken = lexer.consumeKind(TokenKind.RParen);
+					rvalue = new RValueCallNode(
 						rvalue,
-						arguments: args,
-						span: new Span(
-							lparenToken.getSpan().getStart(),
+						args,
+						new Span(
+							rvalue.getSpan().getStart(),
 							rparenToken.getSpan().getEnd()
 						)
-					} as RValueCallNode;
+					);
 				}
 				peek = lexer.peek();
 			}
@@ -240,17 +267,17 @@ function Primary(lexer: Lexer): ExpressionNode {
 
 function Unary(lexer: Lexer): ExpressionNode {
 	const token = lexer.peek();
-	if (![TokenKind.Plus, TokenKind.Minus].includes(token.getKind())) {
+	if (!token.isKind([TokenKind.Plus, TokenKind.Minus])) {
 		return Primary(lexer);
 	}
-	const operator = token.getKind() === TokenKind.Plus ? 'plus' : 'minus';
+	const operator = token.isKind([TokenKind.Plus]) ? 'plus' : 'minus';
 	const plusToken = lexer.consume();
 	const expr = Unary(lexer);
-	return {
-		type: operator,
-		operand: expr,
-		span: new Span(plusToken.getSpan().getStart(), expr.span.getEnd())
-	} as UnaryNode;
+	return new UnaryNode(
+		operator,
+		expr,
+		new Span(plusToken.getSpan().getStart(), expr.getSpan().getEnd())
+	);
 }
 
 // Exponentiation //
@@ -259,14 +286,14 @@ function Unary(lexer: Lexer): ExpressionNode {
 function Exponentiation(lexer: Lexer): ExpressionNode {
 	let expr = Unary(lexer);
 	let peek = lexer.peek();
-	while (peek.getKind() === TokenKind.Caret) {
+	while (peek.isKind([TokenKind.Caret])) {
 		lexer.consume();
 		const right = Unary(lexer);
-		expr = {
-			type: 'power',
-			operands: [expr, right],
-			span: new Span(expr.span.getStart(), right.span.getEnd())
-		} as BinaryNode;
+		expr = new BinaryNode(
+			'power',
+			[expr, right],
+			new Span(expr.getSpan().getStart(), right.getSpan().getEnd())
+		);
 		peek = lexer.peek();
 	}
 	return expr;
@@ -279,13 +306,11 @@ function Multiplication(lexer: Lexer): ExpressionNode {
 	let expr = Exponentiation(lexer);
 	let peek = lexer.peek();
 	while (
-		[TokenKind.Star, TokenKind.Slash, TokenKind.Percentage].includes(
-			peek.getKind()
-		)
+		peek.isKind([TokenKind.Star, TokenKind.Slash, TokenKind.Percentage])
 	) {
 		lexer.consume();
 		const right = Exponentiation(lexer);
-		let operator = 'multiply';
+		let operator: BinaryOperator = 'multiply';
 		switch (peek.getKind()) {
 			case TokenKind.Slash: {
 				operator = 'divide';
@@ -296,11 +321,11 @@ function Multiplication(lexer: Lexer): ExpressionNode {
 				break;
 			}
 		}
-		expr = {
-			type: operator,
-			operands: [expr, right],
-			span: new Span(expr.span.getStart(), right.span.getEnd())
-		} as BinaryNode;
+		expr = new BinaryNode(
+			operator,
+			[expr, right],
+			new Span(expr.getSpan().getStart(), right.getSpan().getEnd())
+		);
 		peek = lexer.peek();
 	}
 	return expr;
@@ -312,15 +337,15 @@ function Multiplication(lexer: Lexer): ExpressionNode {
 function Addition(lexer: Lexer): ExpressionNode {
 	let expr = Multiplication(lexer);
 	let peek = lexer.peek();
-	while ([TokenKind.Plus, TokenKind.Minus].includes(peek.getKind())) {
+	while (peek.isKind([TokenKind.Plus, TokenKind.Minus])) {
 		lexer.consume();
 		const right = Multiplication(lexer);
-		const operator = peek.getKind() === TokenKind.Plus ? 'add' : 'subtract';
-		expr = {
-			type: operator,
-			operands: [expr, right],
-			span: new Span(expr.span.getStart(), right.span.getEnd())
-		} as BinaryNode;
+		const operator = peek.isKind([TokenKind.Plus]) ? 'add' : 'subtract';
+		expr = new BinaryNode(
+			operator,
+			[expr, right],
+			new Span(expr.getSpan().getStart(), right.getSpan().getEnd())
+		);
 		peek = lexer.peek();
 	}
 	return expr;
@@ -333,13 +358,11 @@ function Comparison(lexer: Lexer): ExpressionNode {
 	let expr = Addition(lexer);
 	let peek = lexer.peek();
 	while (
-		[TokenKind.Lt, TokenKind.Le, TokenKind.Gt, TokenKind.Ge].includes(
-			peek.getKind()
-		)
+		peek.isKind([TokenKind.Lt, TokenKind.Le, TokenKind.Gt, TokenKind.Ge])
 	) {
 		lexer.consume();
 		const right = Addition(lexer);
-		let operator = 'lessthan';
+		let operator: BinaryOperator = 'lessthan';
 		switch (peek.getKind()) {
 			case TokenKind.Le: {
 				operator = 'lessthanorequal';
@@ -354,11 +377,11 @@ function Comparison(lexer: Lexer): ExpressionNode {
 				break;
 			}
 		}
-		expr = {
-			type: operator,
-			operands: [expr, right],
-			span: new Span(expr.span.getStart(), right.span.getEnd())
-		} as BinaryNode;
+		expr = new BinaryNode(
+			operator,
+			[expr, right],
+			new Span(expr.getSpan().getStart(), right.getSpan().getEnd())
+		);
 		peek = lexer.peek();
 	}
 	return expr;
@@ -370,15 +393,15 @@ function Comparison(lexer: Lexer): ExpressionNode {
 function Equality(lexer: Lexer): ExpressionNode {
 	let expr = Comparison(lexer);
 	let peek = lexer.peek();
-	while ([TokenKind.Eq, TokenKind.NotEq].includes(peek.getKind())) {
+	while (peek.isKind([TokenKind.Eq, TokenKind.NotEq])) {
 		lexer.consume();
 		const right = Comparison(lexer);
-		const operator = peek.getKind() === TokenKind.Eq ? 'equal' : 'notequal';
-		expr = {
-			type: operator,
-			operands: [expr, right],
-			span: new Span(expr.span.getStart(), right.span.getEnd())
-		} as BinaryNode;
+		const operator = peek.isKind([TokenKind.Eq]) ? 'equal' : 'notequal';
+		expr = new BinaryNode(
+			operator,
+			[expr, right],
+			new Span(expr.getSpan().getStart(), right.getSpan().getEnd())
+		);
 		peek = lexer.peek();
 	}
 	return expr;
@@ -390,15 +413,15 @@ function Equality(lexer: Lexer): ExpressionNode {
 function LogicGates(lexer: Lexer): ExpressionNode {
 	let expr = Equality(lexer);
 	let peek = lexer.peek();
-	while ([TokenKind.Ampersand, TokenKind.Pipe].includes(peek.getKind())) {
+	while (peek.isKind([TokenKind.Ampersand, TokenKind.Pipe])) {
 		lexer.consume();
 		const right = Equality(lexer);
-		const operator = peek.getKind() === TokenKind.Ampersand ? 'and' : 'or';
-		expr = {
-			type: operator,
-			operands: [expr, right],
-			span: new Span(expr.span.getStart(), right.span.getEnd())
-		} as BinaryNode;
+		const operator = peek.isKind([TokenKind.Ampersand]) ? 'and' : 'or';
+		expr = new BinaryNode(
+			operator,
+			[expr, right],
+			new Span(expr.getSpan().getStart(), right.getSpan().getEnd())
+		);
 		peek = lexer.peek();
 	}
 	return expr;

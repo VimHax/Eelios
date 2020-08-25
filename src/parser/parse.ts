@@ -1,7 +1,7 @@
 import Lexer from '../lexer/lexer';
-import { ExpressionNode } from './ast';
-
 import ParseExpression from './parseExpression';
+
+import { ExpressionNode } from './ast';
 
 // parse //
 /* Parses and returns an instruction */

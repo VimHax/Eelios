@@ -1,33 +1,32 @@
+import Value from './value';
+
 import { DataType } from '../parser/ast';
+
+// Variable //
+/* Abstraction of a variable in Eelios, stores the name, value & data type */
 
 export class Variable {
 	private readonly name: string;
-	private value: any;
-	private datatype: DataType;
+	private value: Value;
 
-	public constructor(name: string, value: any, datatype: DataType) {
+	public constructor(name: string, value: Value) {
 		this.name = name;
 		this.value = value;
-		this.datatype = datatype;
 	}
 
 	public getName(): string {
 		return this.name;
 	}
 
-	public getValue(): any {
+	public getValue(): Value {
 		return this.value;
 	}
 
-	public setValue(value: any): void {
+	public setValue(value: Value): void {
 		this.value = value;
 	}
 
 	public getDatatype(): DataType {
-		return this.datatype;
-	}
-
-	public setDatatype(datatype: DataType): void {
-		this.datatype = datatype;
+		return this.value.getDataType();
 	}
 }

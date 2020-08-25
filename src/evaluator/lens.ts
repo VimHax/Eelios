@@ -1,4 +1,6 @@
+import Value from './value';
+
 export default interface Lens {
-	get: () => any;
-	set: (value: any) => void;
+	get: () => Value;
+	set: (value: Value) => void;
 }

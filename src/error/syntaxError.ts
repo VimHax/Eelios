@@ -1,4 +1,7 @@
+import chalk from 'chalk';
+
 import InterpreterError from './interpreterError';
+
 import { Span, Token, TokenKind } from '../lexer/token';
 
 // InvalidCharacter //
@@ -15,9 +18,11 @@ export class InvalidCharacter implements InterpreterError {
 
 	public print(contents: string): void {
 		console.log(
-			`Found an invalid character, "${
+			`${chalk.red.bold(
+				'ERROR >'
+			)} Found an invalid character, ${chalk.blue(
 				this.character
-			}", at ${this.span.print(contents)}`
+			)}, at ${this.span.print(contents)}`
 		);
 	}
 }
@@ -36,9 +41,11 @@ export class UnterminatedStringLiteral implements InterpreterError {
 
 	public print(contents: string): void {
 		console.log(
-			`Found an unterminated string literal, "${
+			`${chalk.red.bold(
+				'ERROR >'
+			)} Found an unterminated string literal, ${chalk.blue(
 				this.string
-			}", at ${this.span.print(contents)}`
+			)}, at ${this.span.print(contents)}`
 		);
 	}
 }
@@ -47,21 +54,21 @@ export class UnterminatedStringLiteral implements InterpreterError {
 /* This error will be thrown, by the Lexer, if a specific token was expected but found something else */
 
 export class ExpectedButFound implements InterpreterError {
-	private readonly expected: TokenKind[];
+	private readonly expected: TokenKind;
 	private readonly found: Token;
 
-	public constructor(expected: TokenKind[], found: Token) {
+	public constructor(expected: TokenKind, found: Token) {
 		this.expected = expected;
 		this.found = found;
 	}
 
 	public print(contents: string): void {
 		console.log(
-			`Expected a ${
+			`${chalk.red.bold('ERROR >')} Expected a ${chalk.blue(
 				this.expected
-			} token, but found a ${this.found.getKind()}, at ${this.found
-				.getSpan()
-				.print(contents)}`
+			)} token, but found a ${chalk.blue(
+				this.found.getKind()
+			)}, at ${this.found.getSpan().print(contents)}`
 		);
 	}
 }
@@ -78,7 +85,9 @@ export class InvalidDataType implements InterpreterError {
 
 	public print(contents: string): void {
 		console.log(
-			`Found an invalid datatype, at ${this.span.print(contents)}`
+			`${chalk.red.bold(
+				'ERROR >'
+			)} Found an invalid datatype, at ${this.span.print(contents)}`
 		);
 	}
 }
@@ -95,7 +104,9 @@ export class InvalidInstruction implements InterpreterError {
 
 	public print(contents: string): void {
 		console.log(
-			`Found an invalid instruction, at ${this.span.print(contents)}`
+			`${chalk.red.bold(
+				'ERROR >'
+			)} Found an invalid instruction, at ${this.span.print(contents)}`
 		);
 	}
 }
@@ -114,9 +125,11 @@ export class InvalidParameter implements InterpreterError {
 
 	public print(contents: string): void {
 		console.log(
-			`Multiple parameters share the name "${
+			`${chalk.red.bold(
+				'ERROR >'
+			)} Multiple parameters share the name ${chalk.blue(
 				this.parameter
-			}", at ${this.span.print(contents)}`
+			)}, at ${this.span.print(contents)}`
 		);
 	}
 }

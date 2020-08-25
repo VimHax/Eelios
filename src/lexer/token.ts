@@ -1,3 +1,5 @@
+import chalk from 'chalk';
+
 // Span //
 /* This class stores is used to store an area of code in the file contents */
 
@@ -30,9 +32,11 @@ export class Span {
 			total += length;
 		}
 		const [startCharNo, endCharNo] = [this.start - total, this.end - total];
-		return `Line: ${lineNumber + 1}, Character: ${startCharNo + 1}-${
-			endCharNo + 1
-		}`;
+		return chalk.red(
+			`Line: ${lineNumber + 1}, Character: ${startCharNo + 1}-${
+				endCharNo + 1
+			}`
+		);
 	}
 }
 
@@ -108,5 +112,9 @@ export class Token {
 
 	public getSpan(): Span {
 		return this.span;
+	}
+
+	public isKind(kinds: TokenKind[]): boolean {
+		return kinds.includes(this.kind);
 	}
 }

@@ -1,11 +1,17 @@
 import Lexer from '../lexer/lexer';
+
 import { TokenKind } from '../lexer/token';
 import { InvalidDataType } from '../error/syntaxError';
+
 import {
 	DataType,
 	ArrayDataType,
 	FunctionDataType,
-	ClosureDataType
+	ClosureDataType,
+	StringDataType,
+	NumberDataType,
+	BooleanDataType,
+	InstructionDataType
 } from './ast';
 
 // ParseDataType //
@@ -14,64 +20,60 @@ import {
 export default function ParseDataType(lexer: Lexer): DataType {
 	const token = lexer.consume();
 	switch (token.getKind()) {
+		// Parse String, Number, Boolean, Instruction or Array DataType //
 		case TokenKind.Identifier: {
 			const datatype = token.getValue() as string;
 			if (datatype === 'Array') {
-				lexer.consumeKind([TokenKind.Lt]);
+				lexer.consumeKind(TokenKind.Lt);
 				const datatype = ParseDataType(lexer);
-				lexer.consumeKind([TokenKind.Gt]);
-				return { datatype } as ArrayDataType;
+				lexer.consumeKind(TokenKind.Gt);
+				return new ArrayDataType(datatype);
 			}
-			if (
-				!['string', 'number', 'boolean', 'instruction'].includes(
-					datatype
-				)
-			) {
-				throw new InvalidDataType(token.getSpan());
+			switch (datatype) {
+				case 'String':
+					return new StringDataType();
+				case 'Number':
+					return new NumberDataType();
+				case 'Boolean':
+					return new BooleanDataType();
+				case 'Instruction':
+					return new InstructionDataType();
 			}
-			return { type: datatype } as DataType;
+			throw new InvalidDataType(token.getSpan());
 		}
+		// Parse Function DataType //
 		case TokenKind.Pipe: {
 			const parameters: DataType[] = [];
 			let first = true;
 			let peek = lexer.peek();
-			while (![TokenKind.EOF, TokenKind.Pipe].includes(peek.getKind())) {
+			while (!peek.isKind([TokenKind.EOF, TokenKind.Pipe])) {
 				if (first) first = false;
-				else lexer.consumeKind([TokenKind.Comma]);
+				else lexer.consumeKind(TokenKind.Comma);
 				const parameter = ParseDataType(lexer);
 				parameters.push(parameter);
 				peek = lexer.peek();
 			}
-			lexer.consumeKind([TokenKind.Pipe]);
-			lexer.consumeKind([TokenKind.MinusGt]);
+			lexer.consumeKind(TokenKind.Pipe);
+			lexer.consumeKind(TokenKind.MinusGt);
 			const returnType = ParseDataType(lexer);
-			return {
-				type: 'function',
-				parameters,
-				returnType
-			} as FunctionDataType;
+			return new FunctionDataType(parameters, returnType);
 		}
+		// Parse Closure DataType //
 		case TokenKind.LParen: {
 			const parameters: DataType[] = [];
 			let first = true;
 			let peek = lexer.peek();
-			while (
-				![TokenKind.EOF, TokenKind.RParen].includes(peek.getKind())
-			) {
+			while (!peek.isKind([TokenKind.EOF, TokenKind.RParen])) {
 				if (first) first = false;
-				else lexer.consumeKind([TokenKind.Comma]);
+				else lexer.consumeKind(TokenKind.Comma);
 				const parameter = ParseDataType(lexer);
 				parameters.push(parameter);
 				peek = lexer.peek();
 			}
-			lexer.consumeKind([TokenKind.RParen]);
-			lexer.consumeKind([TokenKind.EqGt]);
+			lexer.consumeKind(TokenKind.RParen);
+			lexer.consumeKind(TokenKind.EqGt);
 			const returnType = ParseDataType(lexer);
-			return {
-				type: 'closure',
-				parameters,
-				returnType
-			} as ClosureDataType;
+			return new ClosureDataType(parameters, returnType);
 		}
 	}
 	throw new InvalidDataType(token.getSpan());

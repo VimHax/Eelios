@@ -9,9 +9,11 @@
     "author": "VimHax",
     "license": "MIT",
     "dependencies": {
+        "@types/chalk": "^2.2.0",
         "@types/node": "^13.7.4",
         "@typescript-eslint/eslint-plugin": "^2.23.0",
         "@typescript-eslint/parser": "^2.23.0",
+        "chalk": "^4.1.0",
         "eslint": "^6.8.0",
         "eslint-config-marine": "^6.0.0",
         "fast-deep-equal": "^3.1.3",

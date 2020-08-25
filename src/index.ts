@@ -1,23 +1,27 @@
+import fs from 'fs';
+import chalk from 'chalk';
+
 import Parse from './parser/parse';
 import Evaluator from './evaluator/evaluator';
 
-import fs from 'fs';
-import util from 'util';
-
-const contents = fs.readFileSync('./test.ee').toString();
+console.log(chalk.green.bold('Eelios v1.0.0 by VimHax'));
+const contents = fs.readFileSync('./program.ee').toString();
 
 try {
-	const start = new Date();
 	const parsed = Parse(contents);
-	const end = new Date();
-	console.log(
-		`Time Taken - ${end.getMilliseconds() - start.getMilliseconds()}`
-	);
-	console.log(util.inspect(parsed, false, null, true));
 	const evaluator = new Evaluator(parsed);
 	const res = evaluator.evaluate();
-	console.log(res);
+	if (res === null) {
+		console.log(
+			chalk.green.bold('Program Exited, Without Evaluating To A Value')
+		);
+	} else {
+		console.log(
+			chalk.green.bold(
+				`Program Exited, It Evaluated To - ${res.getValue().toString()}`
+			)
+		);
+	}
 } catch (err) {
-	console.log(err);
 	err.print(contents);
 }

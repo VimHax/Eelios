@@ -1,10 +1,10 @@
-import { Iter } from '../iter';
-import { Token, TokenKind, Span } from '../token';
-import { InvalidCharacter } from '../../error/syntaxError';
-
 import scanString from './scanString';
 import scanNumber from './scanNumber';
 import scanIdentifier from './scanIdentifier';
+
+import { Iter } from '../iter';
+import { Token, TokenKind, Span } from '../token';
+import { InvalidCharacter } from '../../error/syntaxError';
 
 // scan //
 /* Extracts a single token from the iterator provided and returns it */
