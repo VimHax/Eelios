@@ -19,6 +19,7 @@ import {
 
 import ParseDataType from './parseDataType';
 import ParseInstruction from './parseInstruction';
+import { InvalidParameter } from '../error/syntaxError';
 
 // Primary //
 /* Parses literals, variables, arrays & groupings */
@@ -57,6 +58,9 @@ function Primary(lexer: Lexer): ExpressionNode {
 				if (first) first = false;
 				else lexer.consumeKind([TokenKind.Comma]);
 				const name = lexer.consumeKind([TokenKind.Identifier]);
+				if (parameters.find(p => p[0] === name.getValue())) {
+					throw new InvalidParameter(name.getValue(), name.getSpan());
+				}
 				lexer.consumeKind([TokenKind.Colon]);
 				const datatype = ParseDataType(lexer);
 				parameters.push([name.getValue() as string, datatype]);
@@ -104,6 +108,12 @@ function Primary(lexer: Lexer): ExpressionNode {
 					if (first) first = false;
 					else lexer.consumeKind([TokenKind.Comma]);
 					const name = lexer.consumeKind([TokenKind.Identifier]);
+					if (parameters.find(p => p[0] === name.getValue())) {
+						throw new InvalidParameter(
+							name.getValue(),
+							name.getSpan()
+						);
+					}
 					lexer.consumeKind([TokenKind.Colon]);
 					const datatype = ParseDataType(lexer);
 					parameters.push([name.getValue() as string, datatype]);
@@ -150,13 +160,26 @@ function Primary(lexer: Lexer): ExpressionNode {
 			} as ArrayLiteralNode;
 		}
 		case TokenKind.Identifier: {
+			// Check If Assign Instruction //
+			lexer.wind();
+			lexer.consume();
+			let peek = lexer.peek();
+			while (peek.getKind() === TokenKind.LBracket) {
+				lexer.consume();
+				// eslint-disable-next-line @typescript-eslint/no-use-before-define
+				ParseExpression(lexer);
+				lexer.consumeKind([TokenKind.RBracket]);
+				peek = lexer.peek();
+			}
+			lexer.unwind();
+			if (peek.getKind() === TokenKind.LtMinus) break;
 			lexer.consume();
 			let rvalue: RValueNode = {
 				type: 'variable',
 				name: token.getValue(),
 				span: token.getSpan()
 			} as RValueVariableNode;
-			let peek = lexer.peek();
+			peek = lexer.peek();
 			while (
 				[TokenKind.LBracket, TokenKind.LParen].includes(peek.getKind())
 			) {

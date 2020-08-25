@@ -45,6 +45,7 @@ export enum TokenKind {
 
 	Colon = 'Colon', // :
 	Comma = 'Comma', // ,
+	Dot = 'Dot', // .
 	RParen = 'RParen', // (
 	LParen = 'LParen', // )
 	LBracket = 'LBracket', // [

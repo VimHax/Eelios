@@ -12,7 +12,8 @@ import {
 	LValueNode,
 	LValueVariableNode,
 	LValueIndexOfNode,
-	AssignInstructionNode
+	AssignInstructionNode,
+	ExpressionNode
 } from './ast';
 import ParseExpression from './parseExpression';
 
@@ -26,7 +27,7 @@ export default function ParseInstruction(lexer: Lexer): InstructionNode {
 			const expr = ParseExpression(lexer);
 			const exprs = [expr];
 			let peek = lexer.peek();
-			while (peek.getKind() === TokenKind.Comma) {
+			while (peek.getKind() === TokenKind.Dot) {
 				lexer.consume();
 				const expr = ParseExpression(lexer);
 				exprs.push(expr);
@@ -50,8 +51,7 @@ export default function ParseInstruction(lexer: Lexer): InstructionNode {
 			} as EvaluateInstructionNode;
 		}
 		case TokenKind.ExecKW: {
-			const instruction = ParseInstruction(lexer);
-			if (instruction instanceof SyntaxError) return instruction;
+			const instruction = ParseExpression(lexer);
 			return {
 				type: 'exec',
 				expression: instruction,
@@ -109,7 +109,6 @@ export default function ParseInstruction(lexer: Lexer): InstructionNode {
 			let peek = lexer.peek();
 			while (peek.getKind() === TokenKind.LBracket) {
 				const lBracketToken = lexer.consume();
-				// eslint-disable-next-line @typescript-eslint/no-use-before-define
 				const index = ParseExpression(lexer);
 				const rBracketToken = lexer.consumeKind([TokenKind.RBracket]);
 				lvalue = {
@@ -134,7 +133,7 @@ export default function ParseInstruction(lexer: Lexer): InstructionNode {
 		}
 		case TokenKind.LBracket: {
 			const start = token.getSpan().getStart();
-			const values: InstructionNode[] = [];
+			const values: ExpressionNode[] = [];
 			let first = true;
 			let peek = lexer.peek();
 			while (
@@ -143,8 +142,7 @@ export default function ParseInstruction(lexer: Lexer): InstructionNode {
 				if (first) first = false;
 				else lexer.consumeKind([TokenKind.Comma]);
 				// eslint-disable-next-line @typescript-eslint/no-use-before-define
-				const instruction = ParseInstruction(lexer);
-				if (instruction instanceof SyntaxError) return instruction;
+				const instruction = ParseExpression(lexer);
 				values.push(instruction);
 				peek = lexer.peek();
 			}

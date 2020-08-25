@@ -28,7 +28,8 @@ import {
 	InvalidClosure,
 	InvalidSelf,
 	CannotCompare,
-	InvalidInstruction
+	InvalidInstruction,
+	InvalidArguments
 } from '../error/runtimeError';
 import { Variable } from './variable';
 
@@ -39,11 +40,11 @@ interface Closure {
 }
 
 export default class Evaluator {
-	private readonly instruction: InstructionNode;
+	private readonly instruction: ExpressionNode;
 	private environment: Environment | null = null;
 	private self: Closure | FunctionLiteralNode | null = null;
 
-	public constructor(instruction: InstructionNode) {
+	public constructor(instruction: ExpressionNode) {
 		this.instruction = instruction;
 	}
 
@@ -61,7 +62,8 @@ export default class Evaluator {
 	}
 
 	private evaluateExpressionNode(
-		expr: ExpressionNode
+		expr: ExpressionNode,
+		mode: boolean
 	): [any, DataType, Span] {
 		switch (expr.type) {
 			// Literals //
@@ -109,6 +111,7 @@ export default class Evaluator {
 				];
 			}
 			case 'array': {
+				if (!mode) break;
 				if (expr.values.length === 0) {
 					return [
 						[],
@@ -119,13 +122,11 @@ export default class Evaluator {
 						expr.span
 					];
 				}
-				const res = this.evaluateExpressionNode(
-					expr.values.shift() as ExpressionNode
-				);
-				const arr = [res[0]];
+				const res = this.evaluateExpressionNode(expr.values[0], mode);
+				const arr = [];
 				const arrDatatype = res[1];
 				for (const value of expr.values) {
-					const res = this.evaluateExpressionNode(value);
+					const res = this.evaluateExpressionNode(value, mode);
 					if (!Equal(res[1], arrDatatype)) {
 						throw new ExpectedDataTypesButFound(
 							[arrDatatype],
@@ -147,7 +148,7 @@ export default class Evaluator {
 					if (this.self === null) throw new InvalidSelf(expr.span);
 					if (this.self.type === 'function') {
 						return [
-							expr,
+							this.self,
 							{
 								type: 'function',
 								parameters: this.self.parameters.map(e => e[1]),
@@ -175,7 +176,7 @@ export default class Evaluator {
 				return [res.getValue(), res.getDatatype(), expr.span];
 			}
 			case 'indexof': {
-				const res = this.evaluateExpressionNode(expr.rvalue);
+				const res = this.evaluateExpressionNode(expr.rvalue, mode);
 				if (res[1].type !== 'array') {
 					throw new ExpectedDataTypesButFound(
 						[
@@ -188,7 +189,7 @@ export default class Evaluator {
 						res[2]
 					);
 				}
-				const index = this.evaluateExpressionNode(expr.index);
+				const index = this.evaluateExpressionNode(expr.index, mode);
 				if (index[1].type !== 'number') {
 					throw new ExpectedDataTypesButFound(
 						[{ type: 'number' } as NumberDataType],
@@ -202,7 +203,7 @@ export default class Evaluator {
 				return [res[0][index[0]], res[1].datatype, expr.span];
 			}
 			case 'call': {
-				const res = this.evaluateExpressionNode(expr.rvalue);
+				const res = this.evaluateExpressionNode(expr.rvalue, mode);
 				if (!['function', 'closure'].includes(res[1].type)) {
 					throw new ExpectedDataTypesButFound(
 						[
@@ -223,23 +224,100 @@ export default class Evaluator {
 				}
 				if (res[1].type === 'function') {
 					const fn = res[0] as FunctionLiteralNode;
+					if (expr.arguments.length !== fn.parameters.length) {
+						throw new InvalidArguments(
+							fn.parameters.length,
+							expr.span
+						);
+					}
+					const args = expr.arguments.map(e => {
+						const res = this.evaluateExpressionNode(e, true);
+						return res;
+					});
+					fn.parameters.forEach((p, idx) => {
+						if (!Equal(args[idx][1], p[1])) {
+							throw new ExpectedDataTypesButFound(
+								[p[1]],
+								args[idx][1],
+								args[idx][2]
+							);
+						}
+					});
+					let env: Environment | null = null;
+					if (fn.parameters.length > 0) {
+						const params = fn.parameters;
+						params.forEach((p, idx) => {
+							env = new Environment(
+								env,
+								new Variable(p[0], args[idx][0], args[idx][1])
+							);
+						});
+					}
 					const evaluator = new Evaluator(fn.instruction);
 					evaluator.setSelf(fn);
+					if (env !== null) evaluator.setEnvironment(env);
 					const val = evaluator.evaluate();
 					if (val === null) throw new InvalidFunction(expr.span);
+					if (fn.returnType.type !== 'instruction') {
+						if (!Equal(val[1], fn.returnType)) {
+							throw new ExpectedDataTypesButFound(
+								[fn.returnType],
+								val[1],
+								val[2]
+							);
+						}
+					}
 					return [val[0], val[1], expr.span];
 				}
-				const closure = res[0] as Closure;
-				const evaluator = new Evaluator(closure.closure.instruction);
-				evaluator.setSelf(closure);
-				evaluator.setEnvironment(closure.environment);
+				const c = res[0] as Closure;
+				if (expr.arguments.length !== c.closure.parameters.length) {
+					throw new InvalidArguments(
+						c.closure.parameters.length,
+						expr.span
+					);
+				}
+				const args = expr.arguments.map(e => {
+					const res = this.evaluateExpressionNode(e, true);
+					return res;
+				});
+				c.closure.parameters.forEach((p, idx) => {
+					if (!Equal(args[idx][1], p[1])) {
+						throw new ExpectedDataTypesButFound(
+							[p[1]],
+							args[idx][1],
+							args[idx][2]
+						);
+					}
+				});
+				let env: Environment = c.environment;
+				if (c.closure.parameters.length > 0) {
+					const params = c.closure.parameters;
+					params.forEach((p, idx) => {
+						env = new Environment(
+							env,
+							new Variable(p[0], args[idx][0], args[idx][1])
+						);
+					});
+				}
+				const evaluator = new Evaluator(c.closure.instruction);
+				evaluator.setSelf(c);
+				evaluator.setEnvironment(env);
 				const val = evaluator.evaluate();
 				if (val === null) throw new InvalidClosure(expr.span);
+				if (c.closure.returnType.type !== 'instruction') {
+					if (!Equal(val[1], c.closure.returnType)) {
+						throw new ExpectedDataTypesButFound(
+							[c.closure.returnType],
+							val[1],
+							val[2]
+						);
+					}
+				}
 				return [val[0], val[1], expr.span];
 			}
 			// Unary Operations //
 			case 'plus': {
-				const res = this.evaluateExpressionNode(expr.operand);
+				const res = this.evaluateExpressionNode(expr.operand, mode);
 				if (res[1].type !== 'number') {
 					throw new ExpectedDataTypesButFound(
 						[
@@ -254,7 +332,7 @@ export default class Evaluator {
 				return [res[0], res[1], expr.span];
 			}
 			case 'minus': {
-				const res = this.evaluateExpressionNode(expr.operand);
+				const res = this.evaluateExpressionNode(expr.operand, mode);
 				if (res[1].type !== 'number') {
 					throw new ExpectedDataTypesButFound(
 						[
@@ -270,8 +348,8 @@ export default class Evaluator {
 			}
 			// Binary Operations //
 			case 'add': {
-				const op1 = this.evaluateExpressionNode(expr.operands[0]);
-				const op2 = this.evaluateExpressionNode(expr.operands[1]);
+				const op1 = this.evaluateExpressionNode(expr.operands[0], mode);
+				const op2 = this.evaluateExpressionNode(expr.operands[1], mode);
 				if (!['number', 'string'].includes(op1[1].type)) {
 					throw new ExpectedDataTypesButFound(
 						[
@@ -300,8 +378,8 @@ export default class Evaluator {
 				];
 			}
 			case 'subtract': {
-				const op1 = this.evaluateExpressionNode(expr.operands[0]);
-				const op2 = this.evaluateExpressionNode(expr.operands[1]);
+				const op1 = this.evaluateExpressionNode(expr.operands[0], mode);
+				const op2 = this.evaluateExpressionNode(expr.operands[1], mode);
 				if (op1[1].type !== 'number') {
 					throw new ExpectedDataTypesButFound(
 						[
@@ -331,8 +409,8 @@ export default class Evaluator {
 				];
 			}
 			case 'multiply': {
-				const op1 = this.evaluateExpressionNode(expr.operands[0]);
-				const op2 = this.evaluateExpressionNode(expr.operands[1]);
+				const op1 = this.evaluateExpressionNode(expr.operands[0], mode);
+				const op2 = this.evaluateExpressionNode(expr.operands[1], mode);
 				if (op1[1].type !== 'number') {
 					throw new ExpectedDataTypesButFound(
 						[
@@ -362,8 +440,8 @@ export default class Evaluator {
 				];
 			}
 			case 'divide': {
-				const op1 = this.evaluateExpressionNode(expr.operands[0]);
-				const op2 = this.evaluateExpressionNode(expr.operands[1]);
+				const op1 = this.evaluateExpressionNode(expr.operands[0], mode);
+				const op2 = this.evaluateExpressionNode(expr.operands[1], mode);
 				if (op1[1].type !== 'number') {
 					throw new ExpectedDataTypesButFound(
 						[
@@ -393,8 +471,8 @@ export default class Evaluator {
 				];
 			}
 			case 'power': {
-				const op1 = this.evaluateExpressionNode(expr.operands[0]);
-				const op2 = this.evaluateExpressionNode(expr.operands[1]);
+				const op1 = this.evaluateExpressionNode(expr.operands[0], mode);
+				const op2 = this.evaluateExpressionNode(expr.operands[1], mode);
 				if (op1[1].type !== 'number') {
 					throw new ExpectedDataTypesButFound(
 						[
@@ -424,8 +502,8 @@ export default class Evaluator {
 				];
 			}
 			case 'modulus': {
-				const op1 = this.evaluateExpressionNode(expr.operands[0]);
-				const op2 = this.evaluateExpressionNode(expr.operands[1]);
+				const op1 = this.evaluateExpressionNode(expr.operands[0], mode);
+				const op2 = this.evaluateExpressionNode(expr.operands[1], mode);
 				if (op1[1].type !== 'number') {
 					throw new ExpectedDataTypesButFound(
 						[
@@ -455,8 +533,8 @@ export default class Evaluator {
 				];
 			}
 			case 'and': {
-				const op1 = this.evaluateExpressionNode(expr.operands[0]);
-				const op2 = this.evaluateExpressionNode(expr.operands[1]);
+				const op1 = this.evaluateExpressionNode(expr.operands[0], mode);
+				const op2 = this.evaluateExpressionNode(expr.operands[1], mode);
 				if (op1[1].type !== 'boolean') {
 					throw new ExpectedDataTypesButFound(
 						[
@@ -486,8 +564,8 @@ export default class Evaluator {
 				];
 			}
 			case 'or': {
-				const op1 = this.evaluateExpressionNode(expr.operands[0]);
-				const op2 = this.evaluateExpressionNode(expr.operands[1]);
+				const op1 = this.evaluateExpressionNode(expr.operands[0], mode);
+				const op2 = this.evaluateExpressionNode(expr.operands[1], mode);
 				if (op1[1].type !== 'boolean') {
 					throw new ExpectedDataTypesButFound(
 						[
@@ -517,8 +595,8 @@ export default class Evaluator {
 				];
 			}
 			case 'equal': {
-				const op1 = this.evaluateExpressionNode(expr.operands[0]);
-				const op2 = this.evaluateExpressionNode(expr.operands[1]);
+				const op1 = this.evaluateExpressionNode(expr.operands[0], mode);
+				const op2 = this.evaluateExpressionNode(expr.operands[1], mode);
 				if (
 					['array', 'instruction', 'function', 'closure'].includes(
 						op1[1].type
@@ -540,8 +618,8 @@ export default class Evaluator {
 				];
 			}
 			case 'notequal': {
-				const op1 = this.evaluateExpressionNode(expr.operands[0]);
-				const op2 = this.evaluateExpressionNode(expr.operands[1]);
+				const op1 = this.evaluateExpressionNode(expr.operands[0], mode);
+				const op2 = this.evaluateExpressionNode(expr.operands[1], mode);
 				if (
 					['array', 'instruction', 'function', 'closure'].includes(
 						op1[1].type
@@ -563,8 +641,8 @@ export default class Evaluator {
 				];
 			}
 			case 'lessthan': {
-				const op1 = this.evaluateExpressionNode(expr.operands[0]);
-				const op2 = this.evaluateExpressionNode(expr.operands[1]);
+				const op1 = this.evaluateExpressionNode(expr.operands[0], mode);
+				const op2 = this.evaluateExpressionNode(expr.operands[1], mode);
 				if (op1[1].type !== 'number') {
 					throw new ExpectedDataTypesButFound(
 						[
@@ -594,8 +672,8 @@ export default class Evaluator {
 				];
 			}
 			case 'greaterthan': {
-				const op1 = this.evaluateExpressionNode(expr.operands[0]);
-				const op2 = this.evaluateExpressionNode(expr.operands[1]);
+				const op1 = this.evaluateExpressionNode(expr.operands[0], mode);
+				const op2 = this.evaluateExpressionNode(expr.operands[1], mode);
 				if (op1[1].type !== 'number') {
 					throw new ExpectedDataTypesButFound(
 						[
@@ -625,8 +703,8 @@ export default class Evaluator {
 				];
 			}
 			case 'lessthanorequal': {
-				const op1 = this.evaluateExpressionNode(expr.operands[0]);
-				const op2 = this.evaluateExpressionNode(expr.operands[1]);
+				const op1 = this.evaluateExpressionNode(expr.operands[0], mode);
+				const op2 = this.evaluateExpressionNode(expr.operands[1], mode);
 				if (op1[1].type !== 'number') {
 					throw new ExpectedDataTypesButFound(
 						[
@@ -656,8 +734,8 @@ export default class Evaluator {
 				];
 			}
 			case 'greaterthanorequal': {
-				const op1 = this.evaluateExpressionNode(expr.operands[0]);
-				const op2 = this.evaluateExpressionNode(expr.operands[1]);
+				const op1 = this.evaluateExpressionNode(expr.operands[0], mode);
+				const op2 = this.evaluateExpressionNode(expr.operands[1], mode);
 				if (op1[1].type !== 'number') {
 					throw new ExpectedDataTypesButFound(
 						[
@@ -687,13 +765,21 @@ export default class Evaluator {
 				];
 			}
 		}
-		const res = this.evaluateInstructionNode(
-			expr as InstructionNode,
-			true,
-			true
-		);
-		if (res === null) throw new InvalidInstruction(expr.span);
-		return res;
+		if (expr.type === 'exec' && mode) {
+			const res = this.evaluateInstructionNode(expr, true, true);
+			if (res === null) {
+				throw new InvalidInstruction(expr.span);
+			}
+			return res;
+		}
+		if (expr.type === 'array') {
+			return [
+				expr,
+				{ type: 'array', datatype: { type: 'instruction' } },
+				expr.span
+			];
+		}
+		return [expr, { type: 'instruction' }, expr.span];
 	}
 
 	private evaluateLValue(node: LValueNode): [Lens, Lens, Span] {
@@ -753,7 +839,7 @@ export default class Evaluator {
 						lenses[2]
 					);
 				}
-				const index = this.evaluateExpressionNode(node.index);
+				const index = this.evaluateExpressionNode(node.index, true);
 				if (index[1].type !== 'number') {
 					throw new ExpectedDataTypesButFound(
 						[{ type: 'number' } as NumberDataType],
@@ -795,7 +881,8 @@ export default class Evaluator {
 		if (
 			datatype.type === 'instruction' ||
 			(datatype.type === 'array' &&
-				datatype.datatype.type === 'instruction')
+				datatype.datatype.type === 'instruction') ||
+			(datatype.type === 'array' && datatype.datatype.type === 'any')
 		) {
 			return this.evaluateInstructionNode(value, false, false);
 		}
@@ -822,7 +909,7 @@ export default class Evaluator {
 		if (expression) {
 			if (ins.type === 'exec' && topLevel) {
 				return this.evaluateInstruction(
-					...this.evaluateExpressionNode(ins.expression)
+					...this.evaluateExpressionNode(ins.expression, true)
 				);
 			}
 			return [
@@ -831,10 +918,18 @@ export default class Evaluator {
 				ins.span
 			];
 		}
+		if (ins instanceof Array) {
+			for (const i of ins) {
+				const val = this.evaluateExpressionNode(i, true);
+				const res = this.evaluateInstruction(...val);
+				if (res !== null) return res;
+			}
+			return null;
+		}
 		switch (ins.type) {
 			case 'print': {
 				const exprs = ins.expressions.map(e => {
-					const res = this.evaluateExpressionNode(e);
+					const res = this.evaluateExpressionNode(e, true);
 					return util.inspect(res[0], false, null, true);
 				});
 				console.log(exprs.join(', '));
@@ -843,21 +938,13 @@ export default class Evaluator {
 			case 'assign': {
 				const lvalue = this.evaluateLValue(ins.lvalue);
 				const datatype = lvalue[1].get() as DataType;
-				const value = this.evaluateExpressionNode(ins.expression);
+				const value = this.evaluateExpressionNode(ins.expression, true);
 				if (
 					datatype.type !== value[1].type &&
 					datatype.type !== 'any'
 				) {
 					throw new ExpectedDataTypesButFound(
-						[
-							{ type: 'any' } as AnyDataType,
-							{
-								type: 'array',
-								datatype: {
-									type: 'instruction'
-								} as InstructionDataType
-							} as ArrayDataType
-						],
+						[datatype],
 						value[1],
 						value[2]
 					);
@@ -867,16 +954,19 @@ export default class Evaluator {
 				return null;
 			}
 			case 'eval': {
-				const value = this.evaluateExpressionNode(ins.expression);
+				const value = this.evaluateExpressionNode(ins.expression, true);
 				return value;
 			}
 			case 'exec': {
-				const value = this.evaluateExpressionNode(ins.expression);
+				const value = this.evaluateExpressionNode(ins.expression, true);
 				const res = this.evaluateInstruction(...value);
 				return res;
 			}
 			case 'if': {
-				const condition = this.evaluateExpressionNode(ins.condition);
+				const condition = this.evaluateExpressionNode(
+					ins.condition,
+					true
+				);
 				if (condition[1].type !== 'boolean') {
 					throw new ExpectedDataTypesButFound(
 						[{ type: 'boolean' } as BooleanDataType],
@@ -886,13 +976,15 @@ export default class Evaluator {
 				}
 				if (condition[0]) {
 					const thenExpression = this.evaluateExpressionNode(
-						ins.thenExpression
+						ins.thenExpression,
+						true
 					);
 					return this.evaluateInstruction(...thenExpression);
 				}
 				if (ins.elseExpression === null) return null;
 				const elseExpression = this.evaluateExpressionNode(
-					ins.elseExpression
+					ins.elseExpression,
+					true
 				);
 				return this.evaluateInstruction(...elseExpression);
 			}
@@ -900,7 +992,8 @@ export default class Evaluator {
 				let exit = false;
 				do {
 					const condition = this.evaluateExpressionNode(
-						ins.condition
+						ins.condition,
+						true
 					);
 					if (condition[1].type !== 'boolean') {
 						throw new ExpectedDataTypesButFound(
@@ -912,7 +1005,10 @@ export default class Evaluator {
 					if (condition[0] === false) {
 						exit = true;
 					} else {
-						const body = this.evaluateExpressionNode(ins.body);
+						const body = this.evaluateExpressionNode(
+							ins.body,
+							true
+						);
 						const res = this.evaluateInstruction(...body);
 						if (res !== null) return res;
 					}
@@ -921,11 +1017,8 @@ export default class Evaluator {
 			}
 			case 'array': {
 				for (const i of ins.values) {
-					const res = this.evaluateInstructionNode(
-						i as InstructionNode,
-						false,
-						false
-					);
+					const val = this.evaluateExpressionNode(i, true);
+					const res = this.evaluateInstruction(...val);
 					if (res !== null) return res;
 				}
 				return null;
@@ -934,6 +1027,7 @@ export default class Evaluator {
 	}
 
 	public evaluate(): null | [any, DataType, Span] {
-		return this.evaluateInstructionNode(this.instruction, false, true);
+		const val = this.evaluateExpressionNode(this.instruction, false);
+		return this.evaluateInstruction(...val);
 	}
 }

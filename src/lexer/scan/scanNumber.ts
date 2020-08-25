@@ -1,6 +1,5 @@
 import { Iter } from '../iter';
 import { Token, TokenKind, Span } from '../token';
-import { InvalidCharacter } from '../../error/syntaxError';
 
 // scanNumber //
 /* Extracts a number from the provided iterator */
@@ -26,5 +25,5 @@ export default function scanNumber(iter: Iter): Token {
 		return new Token(TokenKind.NumberLiteral, Number(number), span);
 	}
 
-	throw new InvalidCharacter(number, span);
+	return new Token(TokenKind.Dot, null, span);
 }

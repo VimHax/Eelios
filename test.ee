@@ -1,4 +1,10 @@
 [
-	a <- "Hi",
-	print a
+	f <- | | -> () => number [
+		a <- 5,
+		eval () => number [ a <- a + 1, eval a - 1 ]
+	],
+	c <- f(),
+	print c(),
+	print c(),
+	print c()
 ]

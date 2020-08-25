@@ -1,12 +1,12 @@
 import Lexer from '../lexer/lexer';
-import { InstructionNode } from './ast';
+import { ExpressionNode } from './ast';
 
-import ParseInstruction from './parseInstruction';
+import ParseExpression from './parseExpression';
 
 // parse //
 /* Parses and returns an instruction */
 
-export default function parse(contents: string): InstructionNode {
+export default function parse(contents: string): ExpressionNode {
 	const lexer = new Lexer(contents);
-	return ParseInstruction(lexer);
+	return ParseExpression(lexer);
 }

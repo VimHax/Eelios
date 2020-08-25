@@ -161,3 +161,26 @@ export class CannotCompare implements InterpreterError {
 		);
 	}
 }
+
+// InvalidArguments //
+/* This error will be thrown, by the Evaluator, if the caller provided less or more than the arguments expected by a function or closure */
+
+export class InvalidArguments implements InterpreterError {
+	private readonly argLength: number;
+	private readonly span: Span;
+
+	public constructor(length: number, span: Span) {
+		this.argLength = length;
+		this.span = span;
+	}
+
+	public print(contents: string): void {
+		console.log(
+			`Provided more or less than ${
+				this.argLength
+			} arguments to the function or closure, at ${this.span.print(
+				contents
+			)}`
+		);
+	}
+}

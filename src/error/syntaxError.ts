@@ -99,3 +99,24 @@ export class InvalidInstruction implements InterpreterError {
 		);
 	}
 }
+
+// InvalidParameter //
+/* This error will be thrown, by the Parser, if multiple parameters share the same name */
+
+export class InvalidParameter implements InterpreterError {
+	private readonly parameter: string;
+	private readonly span: Span;
+
+	public constructor(parameter: string, span: Span) {
+		this.parameter = parameter;
+		this.span = span;
+	}
+
+	public print(contents: string): void {
+		console.log(
+			`Multiple parameters share the name "${
+				this.parameter
+			}", at ${this.span.print(contents)}`
+		);
+	}
+}
