@@ -80,8 +80,10 @@ export enum TokenKind {
 	EvalKW = 'EvalKW',
 	ExecKW = 'ExecKW',
 	IfKW = 'IfKW',
+	ThenKW = 'ThenKW',
 	ElseKW = 'ElseKW',
 	WhileKW = 'WhileKW',
+	DoKW = 'DoKW',
 
 	NumberLiteral = 'NumberLiteral',
 	StringLiteral = 'StringLiteral',

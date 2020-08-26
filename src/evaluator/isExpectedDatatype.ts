@@ -48,7 +48,7 @@ export default function isExpectedDatatype(
 		}
 		const parameters = actual.getParameters();
 		for (const [idx, parameter] of expected.getParameters().entries()) {
-			if (isExpectedDatatype(parameter, parameters[idx])) return false;
+			if (!isExpectedDatatype(parameter, parameters[idx])) return false;
 		}
 		return isExpectedDatatype(
 			expected.getReturnType(),
@@ -62,7 +62,7 @@ export default function isExpectedDatatype(
 		}
 		const parameters = actual.getParameters();
 		for (const [idx, parameter] of expected.getParameters().entries()) {
-			if (isExpectedDatatype(parameter, parameters[idx])) return false;
+			if (!isExpectedDatatype(parameter, parameters[idx])) return false;
 		}
 		return isExpectedDatatype(
 			expected.getReturnType(),

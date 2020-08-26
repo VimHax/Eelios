@@ -9,8 +9,7 @@ import { ExpectedButFound } from '../error/syntaxError';
 
 export default class Lexer {
 	private idx = -1;
-	private winding = false;
-	private windingIdx = 0;
+	private readonly winding: number[] = [];
 	private readonly iter: Iter;
 	private readonly processed: Token[] = [];
 
@@ -19,15 +18,12 @@ export default class Lexer {
 	}
 
 	public wind(): void {
-		if (this.winding) throw Error('Already winding');
-		this.winding = true;
-		this.windingIdx = this.idx;
+		this.winding.push(this.idx);
 	}
 
 	public unwind(): void {
-		if (!this.winding) throw Error('Already unwinded');
-		this.winding = false;
-		this.idx = this.windingIdx;
+		if (this.winding.length === 0) throw Error('Already unwinded');
+		this.idx = (this.winding.pop() as unknown) as number;
 	}
 
 	public currentToken(): Token {

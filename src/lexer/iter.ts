@@ -47,5 +47,12 @@ export class Iter {
 		) {
 			this.next();
 		}
+		if (!this.isEOF() && this.currentChar() === '#') {
+			this.next();
+			while (!this.isEnd()) {
+				this.next();
+			}
+			this.skipWhitespace();
+		}
 	}
 }

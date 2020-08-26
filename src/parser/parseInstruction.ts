@@ -65,6 +65,7 @@ export default function ParseInstruction(lexer: Lexer): InstructionNode {
 		// Parse If Instructions //
 		case TokenKind.IfKW: {
 			const condition = ParseExpression(lexer);
+			lexer.consumeKind(TokenKind.ThenKW);
 			const thenExpression = ParseExpression(lexer);
 			const peek = lexer.peek();
 			let elseExpression: ExpressionNode | null = null;
@@ -85,6 +86,7 @@ export default function ParseInstruction(lexer: Lexer): InstructionNode {
 		// Parse While Instructions //
 		case TokenKind.WhileKW: {
 			const condition = ParseExpression(lexer);
+			lexer.consumeKind(TokenKind.DoKW);
 			const body = ParseExpression(lexer);
 			return new WhileInstructionNode(
 				condition,

@@ -235,7 +235,17 @@ export default class Evaluator {
 					index.getSpan()
 				);
 			}
-			const element = rvalue.getValue()[index.getValue()];
+			let element;
+			if (
+				isExpectedDatatype(
+					new ArrayDataType(new InstructionDataType()),
+					rvalue.getDataType()
+				)
+			) {
+				element = rvalue.getValue().getValues()[index.getValue()];
+			} else {
+				element = rvalue.getValue()[index.getValue()];
+			}
 			if (element === undefined) {
 				throw new InvalidIndex(index.getValue(), index.getSpan());
 			}
@@ -502,7 +512,7 @@ export default class Evaluator {
 					case 'divide':
 						return new Value(LHSVal / RHSVal, numType, span);
 					case 'power':
-						return new Value(LHSVal ^ RHSVal, numType, span);
+						return new Value(LHSVal ** RHSVal, numType, span);
 					case 'modulus':
 						return new Value(LHSVal % RHSVal, numType, span);
 					case 'lessthan':
