@@ -659,6 +659,5 @@ export type InstructionNode =
 	| AssignInstructionNode
 	| EvaluateInstructionNode
 	| ExecuteInstructionNode
-	| ArrayLiteralNode
 	| IfInstructionNode
 	| WhileInstructionNode;

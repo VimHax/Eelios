@@ -151,6 +151,13 @@ export default class Evaluator {
 				}
 				array.push(res.getValue());
 			}
+			if (datatype instanceof InstructionDataType) {
+				return new Value(
+					new ArrayLiteralNode(array, expr.getSpan()),
+					new ArrayDataType(datatype as DataType),
+					expr.getSpan()
+				);
+			}
 			return new Value(
 				array,
 				new ArrayDataType(datatype as DataType),
@@ -265,7 +272,23 @@ export default class Evaluator {
 				fn.getParameters().forEach((p, idx) => {
 					env = new Environment(env, new Variable(p[0], args[idx]));
 				});
-				const evaluator = new Evaluator(fn.getExpression());
+				const instruction = this.evaluateExpressionNode(
+					fn.getExpression(),
+					true
+				);
+				if (
+					!isExpectedDatatype(
+						new InstructionDataType(),
+						instruction.getDataType()
+					)
+				) {
+					throw new ExpectedDataTypesButFound(
+						[new InstructionDataType()],
+						instruction.getDataType(),
+						instruction.getSpan()
+					);
+				}
+				const evaluator = new Evaluator(instruction.getValue());
 				evaluator.setSelf(fn);
 				if (env !== null) evaluator.setEnvironment(env);
 				const val = evaluator.evaluate();
@@ -323,7 +346,23 @@ export default class Evaluator {
 							);
 						});
 				}
-				const evaluator = new Evaluator(c.getClosure().getExpression());
+				const instruction = this.evaluateExpressionNode(
+					c.getClosure().getExpression(),
+					true
+				);
+				if (
+					!isExpectedDatatype(
+						new InstructionDataType(),
+						instruction.getDataType()
+					)
+				) {
+					throw new ExpectedDataTypesButFound(
+						[new InstructionDataType()],
+						instruction.getDataType(),
+						instruction.getSpan()
+					);
+				}
+				const evaluator = new Evaluator(instruction.getValue());
 				evaluator.setSelf(c);
 				if (env !== null) evaluator.setEnvironment(env);
 				const val = evaluator.evaluate();

@@ -1,15 +1,11 @@
 [
-    fib <- | n: Number | -> Number [
-        if n <= 1 [ 
-            eval n 
-        ] else [
-            eval self(n - 1) + self(n - 2)
-        ]
-    ],
-    idx <- 0,
-    while idx < 10 [
-        n <- fib(idx),
-        print n,
-        idx <- idx + 1
-    ]
+	a <- "",
+    scope <- ( i: Instruction ) => Instruction [ i, eval [] ],
+	if false scope([
+		a <- "Hi"
+	]) else scope([
+		b <- " World",
+		a <- "Hello" + b
+	]),
+	print a
 ]
