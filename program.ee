@@ -1,23 +1,33 @@
 [
-	map <- | x: Number, fn : | Number | -> Number | -> Number [ eval fn(x) ],
-	
-	fn <- [
-		| x: Number | -> Number [ eval x + 1 ],
-		| x: Number | -> Number [ eval x * 2 ]
-	],
-	
-	a <- [1, 2, 3, 4, 5],
-	b <- [],
-	c <- [],
-	
-	idx <- 0,
-	while idx < 5 do [
-		b[idx] <- map(a[idx], fn[0]),
-		c[idx] <- map(a[idx], fn[1]),
-		idx <- idx + 1
-	],
-	
-	print a,
-	print b,
-	print c
+	maxIterations <- 40,
+	py <- 0,
+	while py < 40 do [
+		line <- "",
+		px <- 0,
+		yScaled <- py / 20 - 1,
+		while px < 70 do [
+			xScaled <- px / 20 - 2.5,
+			x <- 0,
+			y <- 0,
+			i <- 0,
+			while i < maxIterations & x ^ 2 + y ^ 2 <= 2 ^ 2 do [
+				xTemp <- x ^ 2 - y ^ 2 + xScaled,
+				y <- 2 * x * y + yScaled,
+				x <- xTemp,
+				i <- i + 1
+			],
+			part <- maxIterations / 8,
+			if i > part * 7 then [ line <- line + "@" ]
+			else if i > part * 6 then [ line <- line + "#" ]
+			else if i > part * 5 then [ line <- line + "O" ]
+			else if i > part * 4 then [ line <- line + "!" ]
+			else if i > part * 3 then [ line <- line + ";" ]
+			else if i > part * 2 then [ line <- line + ":" ]
+			else if i > part then [ line <- line + "," ]
+			else [ line <- line + "." ],
+			px <- px + .5
+		],
+		print line,
+		py <- py + 1
+	]
 ]

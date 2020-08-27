@@ -8,23 +8,43 @@
 
 ## Example Code
 
-This code generates the first 10 Fibonacci numbers.
+![The result](https://i.ibb.co/nftDwP9/image.png)
+
+This code generates a render of the [Mandelbrot set](https://en.wikipedia.org/wiki/Mandelbrot_set).
 
 ```
 [
-    fib <- | n: Number | -> Number [
-        if n <= 1 then [ 
-            eval n 
-        ] else [
-            eval self(n - 1) + self(n - 2)
-        ]
-    ],
-    idx <- 0,
-    while idx < 10 do [
-        n <- fib(idx),
-        print n,
-        idx <- idx + 1
-    ]
+	maxIterations <- 40,
+	py <- 0,
+	while py < 40 do [
+		line <- "",
+		px <- 0,
+		yScaled <- py / 20 - 1,
+		while px < 70 do [
+			xScaled <- px / 20 - 2.5,
+			x <- 0,
+			y <- 0,
+			i <- 0,
+			while i < maxIterations & x ^ 2 + y ^ 2 <= 2 ^ 2 do [
+				xTemp <- x ^ 2 - y ^ 2 + xScaled,
+				y <- 2 * x * y + yScaled,
+				x <- xTemp,
+				i <- i + 1
+			],
+			part <- maxIterations / 8,
+			if i > part * 7 then [ line <- line + "@" ]
+			else if i > part * 6 then [ line <- line + "#" ]
+			else if i > part * 5 then [ line <- line + "O" ]
+			else if i > part * 4 then [ line <- line + "!" ]
+			else if i > part * 3 then [ line <- line + ";" ]
+			else if i > part * 2 then [ line <- line + ":" ]
+			else if i > part then [ line <- line + "," ]
+			else [ line <- line + "." ],
+			px <- px + .5
+		],
+		print line,
+		py <- py + 1
+	]
 ]
 ```
 
@@ -305,3 +325,25 @@ The instruction `print "a: " . a . " x b: " . b . " = " . product` is invalid ou
 ![The result](https://i.ibb.co/x2pG7hy/image.png)
 
 > You can also return functions or closures from functions and closures, you can also have arrays of functions and closures etc...
+
+### Generate Fibonacci Numbers
+
+```
+[
+    fib <- | n: Number | -> Number [
+        if n <= 1 then [ 
+            eval n 
+        ] else [
+            eval self(n - 1) + self(n - 2)
+        ]
+    ],
+    idx <- 0,
+    while idx < 10 do [
+        n <- fib(idx),
+        print n,
+        idx <- idx + 1
+    ]
+]
+```
+
+![The result](https://i.ibb.co/qR4kjYc/image.png)
