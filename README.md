@@ -2,7 +2,7 @@
 
 [![Run on Repl.it](https://repl.it/badge/github/VimHax/Eelios)](https://repl.it/github/VimHax/Eelios)
 
-**Eelios** is a programming language I made, within ~2 weeks, for the ongoing (as of writing this) [Repl.It's Programming Jam](https://repl.it/jam). It is a pretty basic imperative language with *a gimmick*.
+Eelios is a programming language made, within approximately 2 weeks, for the ongoing (as of writing this) [Repl.It's Programming Jam](https://repl.it/jam). It is a pretty basic imperative language with a gimmick.
 
 ![The Jam](https://i.ibb.co/ZJzTxFc/image.png)
 
@@ -52,9 +52,9 @@ This code generates a render of the [Mandelbrot set](https://en.wikipedia.org/wi
 
 ![Arrays](https://i.ibb.co/DLw6ppm/image.png)
 
-You know how in *virtually* every language you can have arrays of numbers, strings, booleans etc, well in **Eelios**, you can also have *arrays of instructions.*
+In virtually every language you can have arrays of numbers, strings, booleans etc, well in Eelios, you can also have arrays of instructions.
 
-One of the instructions in **Eelios** is the `print` instruction, it, well, *prints* stuff to the console.
+One of the instructions in Eelios is the `print` instruction, it prints text to the console.
 
 ```
 print "Hi"
@@ -70,7 +70,7 @@ The above code would print `Hi` to the console
 ]
 ```
 
-*This* is an *array of instructions*, you can index this array like any other and add elements to it *like any other*.
+This is an array of instructions, you can index this array like any other and add elements to it like any other.
 
 ```
 [
@@ -83,15 +83,15 @@ The above code would print `Hi` to the console
 
 ![Program Output](https://i.ibb.co/HCqkk5N/image.png)
 
-You might have noticed that the program itself is also an array of instructions, and yes, this is in-fact the case. I'll explain these concepts in *much* more depth in the **Documentation**.
+You might have noticed that the program itself is also an array of instructions, and yes, this is in-fact the case. I'll explain these concepts in more depth in the **Documentation**.
 
 ## The Documentation
 
-**Eelios** doesn't care about the styling of the code, so indentation, spacing and all that stuff are all purely for readability.
+Eelios doesn't care about the styling of the code, so indentation, spacing and all that stuff are all purely for readability.
 
 ### Comments
 
-It's *very* basic. Simply, anything, until an **EOL** - *End Of Line* or **EOF** - *End Of File*, after a `#` is considered a comment and will be ignored by **Eelios**.
+It's very basic. Simply, anything, until an EOL - *End Of Line* or EOF - *End Of File*, after a `#` is considered a comment and will be ignored by Eelios.
 
 ```
 [
@@ -139,15 +139,37 @@ true, false # Boolean literals
 
 All the operators are listed in the order of precedence, from highest to lowest. (So the plus & minus unary operators have the highest precedence)
 
-> I **didn't** implement the not operator, I was too lazy...
-
 ### Instructions
 
-This is the fun stuff... Right, so *any* "one" instruction (any place where a single instruction is expected), in **Eelios**, can just be a single *normal* instruction or be an *array* of instructions or be an expression which evaluates to one of the former... A program in **Eelios** is just *one* instruction, however, since **Eelios** allows you to substitute any single instruction with an array of instructions, a program can, and most likely is, an array of instructions.
+This is the fun stuff... right, so any one instruction (any place where a single instruction is expected), in Eelios, can just be a single normal instruction or be an array of instructions or be an expression which evaluates to one of the former... A program in Eelios is just one instruction, however, since Eelios allows you to substitute any single instruction with an array of instructions, a program can, and most likely is, an array of instructions.
 
 > ![Code of the Evaluator](https://i.ibb.co/980LCw1/image.png)
 >
 > The code for executing a program is literally just executing one instruction...
+
+Take the `if` instruction, for example, it has the following syntax, `if <expression> then <instruction> else <instruction>`. You can use this instruction like shown below.
+
+```
+if a > b then print a else print b
+```
+
+The `if` instruction expects just a single instruction after the `then` keyword and after the optional `else` keyword. However, because Eelios allows you to substitute any one instruction with an array of instructions the following is also equally valid code.
+
+```
+if a > b then [ print "The larger number", print a ] else [ print "The larger number", print b ]
+```
+
+Eelios also allows you to substitute in any expression which evaluates to a instruction, thus, you can also do the following.
+
+```
+[
+	thenBody <- [ print "The larger number", print a ],
+	elseBody <- |  | -> Instruction [ eval [ print "The larger number", print b ] ],
+	if a > b then thenBody else elseBody()
+]
+```
+
+> The variable `elseBody` is a function which returns an array of instructions... Functions are explained in the next section
 
 ```
 print <expression> # Prints the value of a single expression
@@ -159,29 +181,39 @@ if <expression> then <instruction> else <instruction> # If the expression evalua
 while <expression> do <instruction> # The instruction will be executed repeatedly while the expression evaluates to `true`
 ```
 
-> Unlike in every other language, the instructions inside of `if` and `while` statements aren't scoped, meaning, any variables you define inside of an `if` and `while` statement will not be discarded after **Eelios** continues from the instruction which made the variables.
+> Unlike in every other language, the instructions inside of `if` and `while` statements aren't scoped, meaning, any variables you define inside of an `if` and `while` statement will not be discarded after Eelios continues from the instruction which made the variables.
+
+Because of how the `eval` instruction and `exec` instructions work, you can emulate conditional (ternary) operator.
+
+```
+c <- exec if a > b then eval x else eval y
+```
+
+The `exec` instruction executes the `if` instruction and it executes the `eval` instruction which returns a value, that value is then assigned to `c`.
 
 ### Functions & Closures
 
-Functions, in **Eelios**, are *pure* functions (functions whose output is always the same for a given input). Additionally, functions, as well as closures, are always anonymous, the only way you can assign them a name is by assigning them to a variable.
+Functions, in Eelios, are pure functions (functions whose output is always the same for a given input). Furthermore, functions, as well as closures, are  anonymous, the only way you can assign them a name is by assigning them to a variable.
 
 ```
 | <parameter> : <datatype> | -> <datatype> <instruction>
 ```
 
-Within the `| |` you provide the list of parameters with their respective data type and then after the `->` you provide the function return type. The instruction can reference the parameters by their names and can also, just like in any other instruction, define new variables... However, functions are scoped, so any new variables you define inside of a function will be discarded after the function has been called.
+Within the `| |` you provide the list of parameters with their respective data type and then after the `->` you provide the function return type. The instruction can reference the parameters by their names and can also, just like in any other instruction, define new variables... However, functions, as well as closures, are scoped, so any new variables you define inside of a function will be discarded after the function has been called.
 
 The way you return a value from a function is using the previously mentioned `eval` instruction. Anything after the `eval` instruction will not be executed.
 
-> There is no `void` return type, thus, every function, as well as closure, must always return *some* value
+> There is no `void` return type, thus, every function, as well as closure, must always return a value
 
-Closures are basically identical to functions in **Eelios**, the only difference is that they *capture* the environment that they were defined in, so variables which were defined before the closure can be used and also mutated (even if those values go out of scope).
+Closures are basically identical to functions in Eelios, the only difference is that they capture the environment that they were defined in, so variables which were defined before the closure can be used and also mutated (even if those values go out of scope).
 
 ```
 ( <parameter> : <datatype> ) => <datatype> <instruction>
 ```
 
-> Any variables defined *after* the closure **cannot** be used inside of the closure, as, they were not a part of the environment it captured.
+> Any variables defined after the closure **cannot** be used inside of the closure, as, they were not a part of the environment it captured.
+
+If you wish to do recursion in Eelios, you must use the `self` value to reference the current function.
 
 #### Examples
 
@@ -193,13 +225,13 @@ Closures are basically identical to functions in **Eelios**, the only difference
 ]
 ```
 
-This function takes 2 arguments of type `Number` and returns the addition of them. You can't exactly reuse this function, since it's anonymous, so you can assign it to a variable like shown below.
+This function takes 2 arguments of type `Number` and returns the addition of them. You can't exactly reuse this function, since it's anonymous, so you can assign it to a variable like shown below, if you want to reuse it.
 
 ```
 add <- | x : Number, y : Number | -> Number eval x + y
 ```
 
-> Since the instruction only contains a single instruction, the `eval` instruction, you can remove the **unnecessary** square brackets. (I prefer to keep them most of the time because it's easier to read with them there)
+> Since the instruction only contains a single instruction, the `eval` instruction, you can remove the **unnecessary** square brackets. (I prefer to keep them most of the time because it's easier to read with them)
 
 ```
 larger <- | x: Number, y : Number | -> Number [
@@ -236,9 +268,27 @@ This function takes 2 arguments of type `Number` and returns the argument which 
 
 ![Result of the program](https://i.ibb.co/cFKMBz9/image.png)
 
-This closure, since it's, well, a *closure*, it can use the variable `a` and also mutate `a`, which is exactly what it does. Whenever this closure is called, `a`, will be incremented by `1`.
+Since this is a closure, it can use the variable `a` and also mutate `a`, which is exactly what it does. Whenever this closure is called, `a`, will be incremented by `1`.
 
-> Notice I was able to call `increment` where an instruction was expected, **Eelios** does **not** support expression-statements, however, since instructions can be substituted by *expressions* which evaluate to instructions, this is exactly what we used. The `increment` closure evaluates to an *empty* array of instructions, thus, nothing would actually happen.	
+> Notice I was able to call `increment` where an instruction was expected, Eelios does **not** support expression-statements, however, since instructions can be substituted by expressions which evaluate to instructions, this is exactly what we use. The `increment` closure evaluates to an empty array of instructions, thus, nothing would actually happen.
+>
+> If you wanted something to happen, you can make the array not empty,`increment <- () => Instruction [ a <- a + 1, eval print "Hey" ]`, this would print `Hi` every time it gets called, if it was called where a instruction was expected. (i.e. the result wasn't stored in a variable for example)
+
+##### Recursion
+
+```
+[
+	factorial <- | n: Number | -> Number [
+		if n = 1 then eval n,
+		eval n * self(n - 1)
+	],
+	print factorial(5)
+]
+```
+
+This function recursively calls itself to evaluate the factorial of `5`. So, in this case, it evaluates to `1 * 2 * 3 * 4 * 5` which equals `120`.
+
+![The result](https://i.ibb.co/c1Bs7y4/image.png)
 
 ## More Example Code
 
@@ -248,7 +298,7 @@ This closure, since it's, well, a *closure*, it can use the variable `a` and als
 print "Hello World"
 ```
 
-### Make a instruction *evaluate* to a value
+### Make a instruction evaluate to a value
 
 ```
 [
@@ -267,7 +317,7 @@ The `eval` instruction evaluates the instruction being called to the value that 
 
 > *"Anything after the `eval` instruction will not be executed."*, this is why there is no "Hi" in the console.
 
-### Make a program *evaluate* to a value
+### Make a program evaluate to a value
 
 ```
 [
@@ -278,6 +328,8 @@ The `eval` instruction evaluates the instruction being called to the value that 
 ```
 
 ![The result](https://i.ibb.co/z8T7J1d/image.png)
+
+The program itself is also just another array of instructions, so the same rules apply.
 
 ### Make a callback instruction
 
@@ -294,9 +346,9 @@ The `eval` instruction evaluates the instruction being called to the value that 
 
 ![The result](https://i.ibb.co/QfN2LrK/image.png)
 
-The instruction `print "a: " . a . " x b: " . b . " = " . product` is invalid outside of the multiply function, and indeed, you would get an error if you tried to *execute* it outside of the multiply function, but that's not being done here... It's only being executed *inside* of the multiply function where the variables `a`, `b` and `product` are all defined. Just because the instruction appears in the arguments it doesn't **necessarily** mean it's being executed. (Unless it's the argument of an `exec` instruction)
+The instruction `print "a: " . a . " x b: " . b . " = " . product` is invalid outside of the multiply function, and indeed, you would get an error if you tried to execute it outside of the multiply function, but that's not being done here... It's only being executed inside of the multiply function where the variables `a`, `b` and `product` are all defined. Just because the instruction appears in the arguments it doesn't necessarily mean it's being executed. (Unless it's the argument of an `exec` instruction)
 
-### Higher Order Functions/Closures & Arrays
+### Higher Order Functions & Arrays
 
 ```
 [
@@ -327,6 +379,8 @@ The instruction `print "a: " . a . " x b: " . b . " = " . product` is invalid ou
 > You can also return functions or closures from functions and closures, you can also have arrays of functions and closures etc...
 
 ### Generate Fibonacci Numbers
+
+Generates and prints the first 10 Fibonacci numbers.
 
 ```
 [
