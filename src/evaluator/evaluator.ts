@@ -1,4 +1,6 @@
+/* eslint-disable @typescript-eslint/indent */
 import chalk from 'chalk';
+import Prompt from 'prompt-sync';
 
 import Lens from './lens';
 import Value from './value';
@@ -40,7 +42,13 @@ import {
 	IfInstructionNode,
 	WhileInstructionNode,
 	RValueGroupingNode,
-	LengthInstructionNode
+	LengthInstructionNode,
+	InputInstructionNode,
+	ToStringInstructionNode,
+	ToNumberInstructionNode,
+	ToBooleanInstructionNode,
+	IsNumberInstructionNode,
+	IsBooleanInstructionNode
 } from '../parser/ast';
 
 import {
@@ -53,8 +61,18 @@ import {
 	InvalidInstruction,
 	InvalidArguments,
 	InvalidExec,
-	InvalidLen
+	InvalidLen,
+	InvalidInput,
+	InvalidToString,
+	InvalidToNumber,
+	InvalidToBoolean,
+	InvalidIsNumber,
+	InvalidIsBoolean,
+	InvalidNumber,
+	InvalidBoolean
 } from '../error/runtimeError';
+
+const prompt = Prompt({ sigint: true });
 
 export default class Evaluator {
 	private readonly instruction: ExpressionNode;
@@ -447,14 +465,14 @@ export default class Evaluator {
 		// Binary Operations //
 
 		if (expr instanceof BinaryNode) {
-			const [LHS, RHS] = expr
-				.getOperands()
-				.map(op => this.evaluateExpressionNode(op, false));
-			const span = new Span(
-				LHS.getSpan().getStart(),
-				RHS.getSpan().getEnd()
-			);
 			if (expr.getOperator() === 'add') {
+				const [LHS, RHS] = expr
+					.getOperands()
+					.map(op => this.evaluateExpressionNode(op, false));
+				const span = new Span(
+					LHS.getSpan().getStart(),
+					RHS.getSpan().getEnd()
+				);
 				if (
 					!isExpectedDatatype(
 						new NumberDataType(),
@@ -494,6 +512,13 @@ export default class Evaluator {
 					'greaterthanorequal'
 				].includes(expr.getOperator())
 			) {
+				const [LHS, RHS] = expr
+					.getOperands()
+					.map(op => this.evaluateExpressionNode(op, false));
+				const span = new Span(
+					LHS.getSpan().getStart(),
+					RHS.getSpan().getEnd()
+				);
 				const idx = [LHS, RHS]
 					.map(op => {
 						const datatype = op.getDataType();
@@ -534,30 +559,90 @@ export default class Evaluator {
 				return new Value(LHSVal >= RHSVal, boolType, span);
 			}
 			if (['and', 'or'].includes(expr.getOperator())) {
-				const idx = [LHS, RHS]
-					.map(op => {
-						const datatype = op.getDataType();
-						return isExpectedDatatype(
-							new BooleanDataType(),
-							datatype
-						);
-					})
-					.findIndex(op => !op);
-				if (idx !== -1) {
+				const LHS = this.evaluateExpressionNode(
+					expr.getOperands()[0],
+					false
+				);
+				if (
+					!isExpectedDatatype(
+						new BooleanDataType(),
+						LHS.getDataType()
+					)
+				) {
 					throw new ExpectedDataTypesButFound(
 						[new BooleanDataType()],
-						[LHS, RHS][idx].getDataType(),
-						[LHS, RHS][idx].getSpan()
+						LHS.getDataType(),
+						expr.getOperands()[0].getSpan()
 					);
 				}
-				const [LHSVal, RHSVal] = [LHS.getValue(), RHS.getValue()];
 				const boolType = new BooleanDataType();
 				if (expr.getOperator() === 'and') {
-					return new Value(LHSVal && RHSVal, boolType, span);
+					if (!LHS.getValue()) {
+						return new Value(
+							false,
+							boolType,
+							expr.getOperands()[0].getSpan()
+						);
+					}
+					const RHS = this.evaluateExpressionNode(
+						expr.getOperands()[1],
+						false
+					);
+					if (
+						!isExpectedDatatype(
+							new BooleanDataType(),
+							RHS.getDataType()
+						)
+					) {
+						throw new ExpectedDataTypesButFound(
+							[new BooleanDataType()],
+							RHS.getDataType(),
+							expr.getOperands()[1].getSpan()
+						);
+					}
+					return new Value(
+						RHS.getValue(),
+						boolType,
+						expr.getOperands()[1].getSpan()
+					);
 				}
-				return new Value(LHSVal || RHSVal, boolType, span);
+				if (LHS.getValue()) {
+					return new Value(
+						true,
+						boolType,
+						expr.getOperands()[0].getSpan()
+					);
+				}
+				const RHS = this.evaluateExpressionNode(
+					expr.getOperands()[1],
+					false
+				);
+				if (
+					!isExpectedDatatype(
+						new BooleanDataType(),
+						RHS.getDataType()
+					)
+				) {
+					throw new ExpectedDataTypesButFound(
+						[new BooleanDataType()],
+						RHS.getDataType(),
+						expr.getOperands()[1].getSpan()
+					);
+				}
+				return new Value(
+					RHS.getValue(),
+					boolType,
+					expr.getOperands()[1].getSpan()
+				);
 			}
 			if (['equal', 'notequal'].includes(expr.getOperator())) {
+				const [LHS, RHS] = expr
+					.getOperands()
+					.map(op => this.evaluateExpressionNode(op, false));
+				const span = new Span(
+					LHS.getSpan().getStart(),
+					RHS.getSpan().getEnd()
+				);
 				if (
 					isExpectedDatatype(
 						new InstructionDataType(),
@@ -595,6 +680,8 @@ export default class Evaluator {
 			throw new Error('Invalid operator');
 		}
 
+		// Execute Instruction //
+
 		if (expr instanceof ExecuteInstructionNode && !instruction) {
 			const res = this.evaluateInstructionNode(expr.getExpression());
 			if (res === null) {
@@ -602,6 +689,9 @@ export default class Evaluator {
 			}
 			return res;
 		}
+
+		// Length Instruction //
+
 		if (expr instanceof LengthInstructionNode && !instruction) {
 			const value = this.evaluateExpressionNode(
 				expr.getExpression(),
@@ -626,6 +716,159 @@ export default class Evaluator {
 			return new Value(
 				value.getValue().length,
 				new NumberDataType(),
+				expr.getSpan()
+			);
+		}
+
+		// Input Instruction //
+
+		if (expr instanceof InputInstructionNode && !instruction) {
+			const value =
+				expr.getExpression() === null
+					? null
+					: this.evaluateExpressionNode(
+							expr.getExpression() as ExpressionNode,
+							false
+					  );
+			if (value !== null) {
+				if (
+					!isExpectedDatatype(
+						new StringDataType(),
+						value.getDataType()
+					)
+				) {
+					throw new ExpectedDataTypesButFound(
+						[new StringDataType()],
+						value.getDataType(),
+						value.getSpan()
+					);
+				}
+				if (value.getValue() !== '') {
+					console.log(
+						`${chalk.magenta.bold('>')} ${
+							value.getValue() as string
+						}`
+					);
+				}
+			}
+			const res = prompt(chalk.magenta.bold('< '));
+			return new Value(res, new StringDataType(), expr.getSpan());
+		}
+
+		// ToString Instruction //
+
+		if (expr instanceof ToStringInstructionNode && !instruction) {
+			const value = this.evaluateExpressionNode(
+				expr.getExpression(),
+				false
+			);
+			return new Value(
+				value.getValue().toString(),
+				new StringDataType(),
+				expr.getSpan()
+			);
+		}
+
+		// ToNumber Instruction //
+
+		if (expr instanceof ToNumberInstructionNode && !instruction) {
+			const value = this.evaluateExpressionNode(
+				expr.getExpression(),
+				false
+			);
+			if (
+				!isExpectedDatatype(new StringDataType(), value.getDataType())
+			) {
+				throw new ExpectedDataTypesButFound(
+					[new StringDataType()],
+					value.getDataType(),
+					value.getSpan()
+				);
+			}
+			const n = Number(value.getValue());
+			if (isNaN(n) || value.getValue().length === 0) {
+				throw new InvalidNumber(
+					value.getValue(),
+					expr.getExpression().getSpan()
+				);
+			}
+			return new Value(n, new NumberDataType(), expr.getSpan());
+		}
+
+		// ToBoolean Instruction //
+
+		if (expr instanceof ToBooleanInstructionNode && !instruction) {
+			const value = this.evaluateExpressionNode(
+				expr.getExpression(),
+				false
+			);
+			if (
+				!isExpectedDatatype(new StringDataType(), value.getDataType())
+			) {
+				throw new ExpectedDataTypesButFound(
+					[new StringDataType()],
+					value.getDataType(),
+					value.getSpan()
+				);
+			}
+			const n =
+				value.getValue() === 'true'
+					? true
+					: value.getValue() === 'false'
+					? false
+					: null;
+			if (n === null) {
+				throw new InvalidBoolean(
+					value.getValue(),
+					expr.getExpression().getSpan()
+				);
+			}
+			return new Value(n, new BooleanDataType(), expr.getSpan());
+		}
+
+		// IsNumber Instruction //
+
+		if (expr instanceof IsNumberInstructionNode && !instruction) {
+			const value = this.evaluateExpressionNode(
+				expr.getExpression(),
+				false
+			);
+			if (
+				!isExpectedDatatype(new StringDataType(), value.getDataType())
+			) {
+				throw new ExpectedDataTypesButFound(
+					[new StringDataType()],
+					value.getDataType(),
+					value.getSpan()
+				);
+			}
+			const n = Number(value.getValue());
+			return new Value(
+				!isNaN(n) && value.getValue().length !== 0,
+				new BooleanDataType(),
+				expr.getSpan()
+			);
+		}
+
+		// IsBoolean Instruction //
+
+		if (expr instanceof IsBooleanInstructionNode && !instruction) {
+			const value = this.evaluateExpressionNode(
+				expr.getExpression(),
+				false
+			);
+			if (
+				!isExpectedDatatype(new StringDataType(), value.getDataType())
+			) {
+				throw new ExpectedDataTypesButFound(
+					[new StringDataType()],
+					value.getDataType(),
+					value.getSpan()
+				);
+			}
+			return new Value(
+				value.getValue() === 'true' || value.getValue() === 'false',
+				new BooleanDataType(),
 				expr.getSpan()
 			);
 		}
@@ -748,6 +991,24 @@ export default class Evaluator {
 		if (ins instanceof LengthInstructionNode) {
 			throw new InvalidLen(ins.getSpan());
 		}
+		if (ins instanceof InputInstructionNode) {
+			throw new InvalidInput(ins.getSpan());
+		}
+		if (ins instanceof ToStringInstructionNode) {
+			throw new InvalidToString(ins.getSpan());
+		}
+		if (ins instanceof ToNumberInstructionNode) {
+			throw new InvalidToNumber(ins.getSpan());
+		}
+		if (ins instanceof ToBooleanInstructionNode) {
+			throw new InvalidToBoolean(ins.getSpan());
+		}
+		if (ins instanceof IsNumberInstructionNode) {
+			throw new InvalidIsNumber(ins.getSpan());
+		}
+		if (ins instanceof IsBooleanInstructionNode) {
+			throw new InvalidIsBoolean(ins.getSpan());
+		}
 		if (ins instanceof AssignInstructionNode) {
 			const lvalue = this.evaluateLValue(ins.getLValue());
 			const datatype = lvalue[0].get().getDataType();
@@ -778,7 +1039,7 @@ export default class Evaluator {
 		if (ins instanceof IfInstructionNode) {
 			const condition = this.evaluateExpressionNode(
 				ins.getCondition(),
-				true
+				false
 			);
 			if (
 				!isExpectedDatatype(
@@ -843,7 +1104,7 @@ export default class Evaluator {
 			do {
 				const condition = this.evaluateExpressionNode(
 					ins.getCondition(),
-					true
+					false
 				);
 				if (
 					!isExpectedDatatype(

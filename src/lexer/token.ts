@@ -78,6 +78,12 @@ export enum TokenKind {
 
 	PrintKW = 'PrintKW',
 	LenKW = 'LenKW',
+	InputKW = 'InputKW',
+	ToStringKW = 'ToStringKW',
+	ToNumberKW = 'ToNumberKW',
+	ToBooleanKW = 'ToBooleanKW',
+	IsNumberKW = 'IsNumberKW',
+	IsBooleanKW = 'IsBooleanKW',
 	EvalKW = 'EvalKW',
 	ExecKW = 'ExecKW',
 	IfKW = 'IfKW',

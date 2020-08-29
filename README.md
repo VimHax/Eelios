@@ -8,20 +8,34 @@ Eelios is a programming language made, within approximately 2 weeks, for the ong
 
 ## Example Code
 
-![The result](https://i.ibb.co/nftDwP9/image.png)
+![The result](https://i.ibb.co/GpC7Yv6/Peek-2020-08-30-02-53.gif)
 
 This code generates a render of the [Mandelbrot set](https://en.wikipedia.org/wiki/Mandelbrot_set).
 
 ```
 [
-	maxIterations <- 40,
+	getNumber <- | message: String | -> Number [
+		n <- 0,
+		valid <- false,
+		while valid = false do [
+			number <- input message,
+			if (isNumber number) & (toNumber number) > 0 then [
+				valid <- true,
+				n <- toNumber number
+			] else print "Please try again."
+		],
+		eval n
+	],
+	maxIterations <- getNumber("Please enter the maximum number of iterations."),
+	width <- getNumber("Please enter the width of the render."),
+	height <- getNumber("Please enter the height of the render."),
 	py <- 0,
-	while py < 40 do [
+	while py < height do [
 		line <- "",
 		px <- 0,
-		yScaled <- py / 20 - 1,
-		while px < 70 do [
-			xScaled <- px / 20 - 2.5,
+		yScaled <- py / height * 2 - 1,
+		while px < width do [
+			xScaled <- px / width * 3.5 - 2.5,
 			x <- 0,
 			y <- 0,
 			i <- 0,
@@ -40,7 +54,7 @@ This code generates a render of the [Mandelbrot set](https://en.wikipedia.org/wi
 			else if i > part * 2 then [ line <- line + ":" ]
 			else if i > part then [ line <- line + "," ]
 			else [ line <- line + "." ],
-			px <- px + .5
+			px <- px + 1
 		],
 		print line,
 		py <- py + 1
@@ -174,7 +188,13 @@ Eelios also allows you to substitute in any expression which evaluates to a inst
 ```
 print <expression> # Prints the value of a single expression
 print <expression> . <expression> # Prints the value of multiple expressions (the expressions are seperated by a `.`)
-len <expression> # Returns the length of an array
+len <array | string> # Returns the length of the array or string provided
+input <optional string> # Gets input from the user and returns a string (the optional string is a prompt message)
+toString <expression> # Converts the given value in to a string
+toNumber <string> # Converts the given string in to a number
+toBoolean <string> # Converts the given string in to a boolean
+isNumber <string> # Returns true if the string is a valid number i.e. it can be converted to a number without any errors
+isBoolean <string> # Returns true if the string is a valid boolean i.e. it can be converted to a boolean withoutt any errors
 <variable> <- <expression> # Assigns the value that the expression evaluates to some variable
 eval <expression> # Returns the value that the expression evaluates to the code which called the instruction, anything after the `eval` instruction will not be executed. (this behaves like the `return` keyword in virtually every other language)
 exec <Instruction> # Executes the instruction and evaluates to the value that the instruction returned (this is the only instruction which can and can only be used in an expression, you can actually call this an operator if you like :D, even though it's not implemented as one)
@@ -348,6 +368,29 @@ The `eval` instruction evaluates the instruction being called to the value that 
 ![The result](https://i.ibb.co/z8T7J1d/image.png)
 
 The program itself is also just another array of instructions, so the same rules apply.
+
+### Get a number from the user (with retries)
+
+```
+[
+	valid <- false,
+	n <- 0,
+	while valid = false do [
+		number <- input "Please enter a number.",
+		if isNumber number then [
+			valid <- true,
+			n <- toNumber number
+		] else [
+			print "Invalid number entered please try again."
+		]
+	],
+	print "The user entered " + toString n
+]
+```
+
+![The result](https://i.ibb.co/31Gr37F/image.png)
+
+Uses a `while` loop to keep getting input from the user until they enter a valid number.
 
 ### Make a callback instruction
 

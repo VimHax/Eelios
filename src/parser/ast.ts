@@ -529,6 +529,138 @@ export class LengthInstructionNode implements ASTNode {
 	}
 }
 
+export class InputInstructionNode implements ASTNode {
+	private readonly expression: ExpressionNode | null;
+	private readonly span: Span;
+
+	public constructor(expression: ExpressionNode | null, span: Span) {
+		this.expression = expression;
+		this.span = span;
+	}
+
+	public getExpression(): ExpressionNode | null {
+		return this.expression;
+	}
+
+	public getSpan(): Span {
+		return this.span;
+	}
+
+	public toString(): string {
+		return 'Input Instruction';
+	}
+}
+
+export class ToStringInstructionNode implements ASTNode {
+	private readonly expression: ExpressionNode;
+	private readonly span: Span;
+
+	public constructor(expression: ExpressionNode, span: Span) {
+		this.expression = expression;
+		this.span = span;
+	}
+
+	public getExpression(): ExpressionNode {
+		return this.expression;
+	}
+
+	public getSpan(): Span {
+		return this.span;
+	}
+
+	public toString(): string {
+		return 'ToString Instruction';
+	}
+}
+
+export class ToNumberInstructionNode implements ASTNode {
+	private readonly expression: ExpressionNode;
+	private readonly span: Span;
+
+	public constructor(expression: ExpressionNode, span: Span) {
+		this.expression = expression;
+		this.span = span;
+	}
+
+	public getExpression(): ExpressionNode {
+		return this.expression;
+	}
+
+	public getSpan(): Span {
+		return this.span;
+	}
+
+	public toString(): string {
+		return 'ToNumber Instruction';
+	}
+}
+
+export class ToBooleanInstructionNode implements ASTNode {
+	private readonly expression: ExpressionNode;
+	private readonly span: Span;
+
+	public constructor(expression: ExpressionNode, span: Span) {
+		this.expression = expression;
+		this.span = span;
+	}
+
+	public getExpression(): ExpressionNode {
+		return this.expression;
+	}
+
+	public getSpan(): Span {
+		return this.span;
+	}
+
+	public toString(): string {
+		return 'ToBoolean Instruction';
+	}
+}
+
+export class IsNumberInstructionNode implements ASTNode {
+	private readonly expression: ExpressionNode;
+	private readonly span: Span;
+
+	public constructor(expression: ExpressionNode, span: Span) {
+		this.expression = expression;
+		this.span = span;
+	}
+
+	public getExpression(): ExpressionNode {
+		return this.expression;
+	}
+
+	public getSpan(): Span {
+		return this.span;
+	}
+
+	public toString(): string {
+		return 'IsNumber Instruction';
+	}
+}
+
+export class IsBooleanInstructionNode implements ASTNode {
+	private readonly expression: ExpressionNode;
+	private readonly span: Span;
+
+	public constructor(expression: ExpressionNode, span: Span) {
+		this.expression = expression;
+		this.span = span;
+	}
+
+	public getExpression(): ExpressionNode {
+		return this.expression;
+	}
+
+	public getSpan(): Span {
+		return this.span;
+	}
+
+	public toString(): string {
+		return 'IsBoolean Instruction';
+	}
+}
+
 export class AssignInstructionNode implements ASTNode {
 	private readonly lvalue: LValueNode;
 	private readonly expression: ExpressionNode;
@@ -679,6 +811,12 @@ export class WhileInstructionNode implements ASTNode {
 export type InstructionNode =
 	| PrintInstructionNode
 	| LengthInstructionNode
+	| InputInstructionNode
+	| ToStringInstructionNode
+	| ToNumberInstructionNode
+	| ToBooleanInstructionNode
+	| IsNumberInstructionNode
+	| IsBooleanInstructionNode
 	| AssignInstructionNode
 	| EvaluateInstructionNode
 	| ExecuteInstructionNode

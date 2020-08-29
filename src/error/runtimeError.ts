@@ -191,9 +191,9 @@ export class InvalidExec implements InterpreterError {
 
 	public print(contents: string): void {
 		console.log(
-			`${chalk.red.bold(
-				'ERROR >'
-			)} Use of exec instruction outside of an expression, at ${this.span.print(
+			`${chalk.red.bold('ERROR >')} Use of ${chalk.blue(
+				'exec'
+			)} instruction outside of an expression, at ${this.span.print(
 				contents
 			)}`
 		);
@@ -212,11 +212,179 @@ export class InvalidLen implements InterpreterError {
 
 	public print(contents: string): void {
 		console.log(
-			`${chalk.red.bold(
-				'ERROR >'
-			)} Use of len instruction outside of an expression, at ${this.span.print(
+			`${chalk.red.bold('ERROR >')} Use of ${chalk.blue(
+				'len'
+			)} instruction outside of an expression, at ${this.span.print(
 				contents
 			)}`
+		);
+	}
+}
+
+// InvalidInput //
+/* This error will be thrown, by the Evaluator, if the caller used the input instruction outside of an expression */
+
+export class InvalidInput implements InterpreterError {
+	private readonly span: Span;
+
+	public constructor(span: Span) {
+		this.span = span;
+	}
+
+	public print(contents: string): void {
+		console.log(
+			`${chalk.red.bold('ERROR >')} Use of ${chalk.blue(
+				'input'
+			)} instruction outside of an expression, at ${this.span.print(
+				contents
+			)}`
+		);
+	}
+}
+
+// InvalidToString //
+/* This error will be thrown, by the Evaluator, if the caller used the toString instruction outside of an expression */
+
+export class InvalidToString implements InterpreterError {
+	private readonly span: Span;
+
+	public constructor(span: Span) {
+		this.span = span;
+	}
+
+	public print(contents: string): void {
+		console.log(
+			`${chalk.red.bold('ERROR >')} Use of ${chalk.blue(
+				'toString'
+			)} instruction outside of an expression, at ${this.span.print(
+				contents
+			)}`
+		);
+	}
+}
+
+// InvalidToNumber //
+/* This error will be thrown, by the Evaluator, if the caller used the toNumber instruction outside of an expression */
+
+export class InvalidToNumber implements InterpreterError {
+	private readonly span: Span;
+
+	public constructor(span: Span) {
+		this.span = span;
+	}
+
+	public print(contents: string): void {
+		console.log(
+			`${chalk.red.bold('ERROR >')} Use of ${chalk.blue(
+				'toNumber'
+			)} instruction outside of an expression, at ${this.span.print(
+				contents
+			)}`
+		);
+	}
+}
+
+// InvalidToBoolean //
+/* This error will be thrown, by the Evaluator, if the caller used the toBoolean instruction outside of an expression */
+
+export class InvalidToBoolean implements InterpreterError {
+	private readonly span: Span;
+
+	public constructor(span: Span) {
+		this.span = span;
+	}
+
+	public print(contents: string): void {
+		console.log(
+			`${chalk.red.bold('ERROR >')} Use of ${chalk.blue(
+				'toBoolean'
+			)} instruction outside of an expression, at ${this.span.print(
+				contents
+			)}`
+		);
+	}
+}
+
+// InvalidIsNumber //
+/* This error will be thrown, by the Evaluator, if the caller used the isNumber instruction outside of an expression */
+
+export class InvalidIsNumber implements InterpreterError {
+	private readonly span: Span;
+
+	public constructor(span: Span) {
+		this.span = span;
+	}
+
+	public print(contents: string): void {
+		console.log(
+			`${chalk.red.bold('ERROR >')} Use of ${chalk.blue(
+				'isNumber'
+			)} instruction outside of an expression, at ${this.span.print(
+				contents
+			)}`
+		);
+	}
+}
+
+// InvalidIsBoolean //
+/* This error will be thrown, by the Evaluator, if the caller used the isBoolean instruction outside of an expression */
+
+export class InvalidIsBoolean implements InterpreterError {
+	private readonly span: Span;
+
+	public constructor(span: Span) {
+		this.span = span;
+	}
+
+	public print(contents: string): void {
+		console.log(
+			`${chalk.red.bold('ERROR >')} Use of ${chalk.blue(
+				'isBoolean'
+			)} instruction outside of an expression, at ${this.span.print(
+				contents
+			)}`
+		);
+	}
+}
+
+// InvalidNumber //
+/* This error will be thrown, by the Evaluator, if the caller tried to convert an invalid number to a number */
+
+export class InvalidNumber implements InterpreterError {
+	private readonly number: string;
+	private readonly span: Span;
+
+	public constructor(number: string, span: Span) {
+		this.number = number;
+		this.span = span;
+	}
+
+	public print(contents: string): void {
+		console.log(
+			`${chalk.red.bold('ERROR >')} Failed to convert, ${chalk.blue(
+				this.number
+			)}, at ${this.span.print(contents)}, to a ${chalk.blue('Number')}`
+		);
+	}
+}
+
+// InvalidBoolean //
+/* This error will be thrown, by the Evaluator, if the caller tried to convert an invalid boolean to a boolean */
+
+export class InvalidBoolean implements InterpreterError {
+	private readonly boolean: string;
+	private readonly span: Span;
+
+	public constructor(number: string, span: Span) {
+		this.boolean = number;
+		this.span = span;
+	}
+
+	public print(contents: string): void {
+		console.log(
+			`${chalk.red.bold('ERROR >')} Failed to convert, ${chalk.blue(
+				this.boolean
+			)}, at ${this.span.print(contents)}, to a ${chalk.blue('Boolean')}`
 		);
 	}
 }

@@ -1,12 +1,26 @@
 [
-	maxIterations <- 40,
+	getNumber <- | message: String | -> Number [
+		n <- 0,
+		valid <- false,
+		while valid = false do [
+			number <- input message,
+			if (isNumber number) & (toNumber number) > 0 then [
+				valid <- true,
+				n <- toNumber number
+			] else print "Please try again."
+		],
+		eval n
+	],
+	maxIterations <- getNumber("Please enter the maximum number of iterations."),
+	width <- getNumber("Please enter the width of the render."),
+	height <- getNumber("Please enter the height of the render."),
 	py <- 0,
-	while py < 40 do [
+	while py < height do [
 		line <- "",
 		px <- 0,
-		yScaled <- py / 20 - 1,
-		while px < 70 do [
-			xScaled <- px / 20 - 2.5,
+		yScaled <- py / height * 2 - 1,
+		while px < width do [
+			xScaled <- px / width * 3.5 - 2.5,
 			x <- 0,
 			y <- 0,
 			i <- 0,
@@ -25,7 +39,7 @@
 			else if i > part * 2 then [ line <- line + ":" ]
 			else if i > part then [ line <- line + "," ]
 			else [ line <- line + "." ],
-			px <- px + .5
+			px <- px + 1
 		],
 		print line,
 		py <- py + 1

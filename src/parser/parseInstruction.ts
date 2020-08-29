@@ -16,8 +16,36 @@ import {
 	LValueIndexOfNode,
 	AssignInstructionNode,
 	ExpressionNode,
-	LengthInstructionNode
+	LengthInstructionNode,
+	InputInstructionNode,
+	ToStringInstructionNode,
+	ToNumberInstructionNode,
+	ToBooleanInstructionNode,
+	IsBooleanInstructionNode,
+	IsNumberInstructionNode
 } from './ast';
+
+const startOfExpression = [
+	TokenKind.StringLiteral,
+	TokenKind.NumberLiteral,
+	TokenKind.BooleanLiteral,
+	TokenKind.Pipe,
+	TokenKind.LParen,
+	TokenKind.LBracket,
+	TokenKind.Identifier,
+	TokenKind.PrintKW,
+	TokenKind.LenKW,
+	TokenKind.InputKW,
+	TokenKind.ToStringKW,
+	TokenKind.ToNumberKW,
+	TokenKind.ToBooleanKW,
+	TokenKind.IsNumberKW,
+	TokenKind.IsBooleanKW,
+	TokenKind.EvalKW,
+	TokenKind.ExecKW,
+	TokenKind.IfKW,
+	TokenKind.WhileKW
+];
 
 // ParseInstruction //
 /* Parses and returns an instruction node */
@@ -48,6 +76,62 @@ export default function ParseInstruction(lexer: Lexer): InstructionNode {
 		case TokenKind.LenKW: {
 			const expr = ParseExpression(lexer);
 			return new LengthInstructionNode(
+				expr,
+				new Span(token.getSpan().getStart(), expr.getSpan().getEnd())
+			);
+		}
+		// Parse Input Instructions //
+		case TokenKind.InputKW: {
+			const peek = lexer.peek();
+			const expr = peek.isKind(startOfExpression)
+				? ParseExpression(lexer)
+				: null;
+			return new InputInstructionNode(
+				expr,
+				new Span(
+					token.getSpan().getStart(),
+					expr === null
+						? token.getSpan().getEnd()
+						: expr.getSpan().getEnd()
+				)
+			);
+		}
+		// Parse ToString Instructions //
+		case TokenKind.ToStringKW: {
+			const expr = ParseExpression(lexer);
+			return new ToStringInstructionNode(
+				expr,
+				new Span(token.getSpan().getStart(), expr.getSpan().getEnd())
+			);
+		}
+		// Parse ToNumber Instructions //
+		case TokenKind.ToNumberKW: {
+			const expr = ParseExpression(lexer);
+			return new ToNumberInstructionNode(
+				expr,
+				new Span(token.getSpan().getStart(), expr.getSpan().getEnd())
+			);
+		}
+		// Parse ToBoolean Instructions //
+		case TokenKind.ToBooleanKW: {
+			const expr = ParseExpression(lexer);
+			return new ToBooleanInstructionNode(
+				expr,
+				new Span(token.getSpan().getStart(), expr.getSpan().getEnd())
+			);
+		}
+		// Parse IsNumber Instructions //
+		case TokenKind.IsNumberKW: {
+			const expr = ParseExpression(lexer);
+			return new IsNumberInstructionNode(
+				expr,
+				new Span(token.getSpan().getStart(), expr.getSpan().getEnd())
+			);
+		}
+		// Parse IsBoolean Instructions //
+		case TokenKind.IsBooleanKW: {
+			const expr = ParseExpression(lexer);
+			return new IsBooleanInstructionNode(
 				expr,
 				new Span(token.getSpan().getStart(), expr.getSpan().getEnd())
 			);
