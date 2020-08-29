@@ -199,3 +199,24 @@ export class InvalidExec implements InterpreterError {
 		);
 	}
 }
+
+// InvalidLen //
+/* This error will be thrown, by the Evaluator, if the caller used the len instruction outside of an expression */
+
+export class InvalidLen implements InterpreterError {
+	private readonly span: Span;
+
+	public constructor(span: Span) {
+		this.span = span;
+	}
+
+	public print(contents: string): void {
+		console.log(
+			`${chalk.red.bold(
+				'ERROR >'
+			)} Use of len instruction outside of an expression, at ${this.span.print(
+				contents
+			)}`
+		);
+	}
+}

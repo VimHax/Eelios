@@ -23,5 +23,14 @@ try {
 		);
 	}
 } catch (err) {
-	err.print(contents);
+	if (err.print) {
+		err.print(contents);
+	} else {
+		console.log(
+			chalk.red.bold(
+				`An internal error occurred while processing your program`
+			)
+		);
+		console.log(err);
+	}
 }

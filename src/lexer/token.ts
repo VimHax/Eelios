@@ -77,6 +77,7 @@ export enum TokenKind {
 	EqGt = 'EqGt', // =>
 
 	PrintKW = 'PrintKW',
+	LenKW = 'LenKW',
 	EvalKW = 'EvalKW',
 	ExecKW = 'ExecKW',
 	IfKW = 'IfKW',

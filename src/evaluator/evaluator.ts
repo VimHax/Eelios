@@ -39,7 +39,8 @@ import {
 	EvaluateInstructionNode,
 	IfInstructionNode,
 	WhileInstructionNode,
-	RValueGroupingNode
+	RValueGroupingNode,
+	LengthInstructionNode
 } from '../parser/ast';
 
 import {
@@ -51,7 +52,8 @@ import {
 	InvalidSelf,
 	InvalidInstruction,
 	InvalidArguments,
-	InvalidExec
+	InvalidExec,
+	InvalidLen
 } from '../error/runtimeError';
 
 export default class Evaluator {
@@ -217,10 +219,14 @@ export default class Evaluator {
 				!isExpectedDatatype(
 					new ArrayDataType(new AnyDataType()),
 					rvalue.getDataType()
-				)
+				) &&
+				!(rvalue.getDataType() instanceof StringDataType)
 			) {
 				throw new ExpectedDataTypesButFound(
-					[new ArrayDataType(new AnyDataType())],
+					[
+						new ArrayDataType(new AnyDataType()),
+						new StringDataType()
+					],
 					rvalue.getDataType(),
 					rvalue.getSpan()
 				);
@@ -248,6 +254,9 @@ export default class Evaluator {
 			}
 			if (element === undefined) {
 				throw new InvalidIndex(index.getValue(), index.getSpan());
+			}
+			if (rvalue.getDataType() instanceof StringDataType) {
+				return new Value(element, rvalue.getDataType(), expr.getSpan());
 			}
 			return new Value(
 				element,
@@ -593,6 +602,33 @@ export default class Evaluator {
 			}
 			return res;
 		}
+		if (expr instanceof LengthInstructionNode && !instruction) {
+			const value = this.evaluateExpressionNode(
+				expr.getExpression(),
+				false
+			);
+			if (
+				!isExpectedDatatype(
+					new ArrayDataType(new AnyDataType()),
+					value.getDataType()
+				) &&
+				!(value.getDataType() instanceof StringDataType)
+			) {
+				throw new ExpectedDataTypesButFound(
+					[
+						new ArrayDataType(new AnyDataType()),
+						new StringDataType()
+					],
+					value.getDataType(),
+					value.getSpan()
+				);
+			}
+			return new Value(
+				value.getValue().length,
+				new NumberDataType(),
+				expr.getSpan()
+			);
+		}
 		return new Value(expr, new InstructionDataType(), expr.getSpan());
 	}
 
@@ -709,6 +745,9 @@ export default class Evaluator {
 			console.log(chalk.green.bold('> ') + chalk.white(exprs.join('')));
 			return null;
 		}
+		if (ins instanceof LengthInstructionNode) {
+			throw new InvalidLen(ins.getSpan());
+		}
 		if (ins instanceof AssignInstructionNode) {
 			const lvalue = this.evaluateLValue(ins.getLValue());
 			const datatype = lvalue[0].get().getDataType();
@@ -754,12 +793,50 @@ export default class Evaluator {
 				);
 			}
 			if (condition.getValue()) {
-				return this.evaluateInstructionNode(ins.getThenExpression());
+				const instruction = this.evaluateExpressionNode(
+					ins.getThenExpression(),
+					true
+				);
+				if (
+					!isExpectedDatatype(
+						new InstructionDataType(),
+						instruction.getDataType()
+					)
+				) {
+					throw new ExpectedDataTypesButFound(
+						[new InstructionDataType()],
+						instruction.getDataType(),
+						instruction.getSpan()
+					);
+				}
+				const evaluator = new Evaluator(instruction.getValue());
+				if (this.environment !== null) {
+					evaluator.setEnvironment(this.environment);
+				}
+				return evaluator.evaluate();
 			}
 			if (ins.getElseExpression() === null) return null;
-			return this.evaluateInstructionNode(
-				ins.getElseExpression() as ExpressionNode
+			const instruction = this.evaluateExpressionNode(
+				ins.getElseExpression() as ExpressionNode,
+				true
 			);
+			if (
+				!isExpectedDatatype(
+					new InstructionDataType(),
+					instruction.getDataType()
+				)
+			) {
+				throw new ExpectedDataTypesButFound(
+					[new InstructionDataType()],
+					instruction.getDataType(),
+					instruction.getSpan()
+				);
+			}
+			const evaluator = new Evaluator(instruction.getValue());
+			if (this.environment !== null) {
+				evaluator.setEnvironment(this.environment);
+			}
+			return evaluator.evaluate();
 		}
 		if (ins instanceof WhileInstructionNode) {
 			let exit = false;
@@ -783,9 +860,27 @@ export default class Evaluator {
 				if (condition.getValue() === false) {
 					exit = true;
 				} else {
-					const res = this.evaluateInstructionNode(
-						ins.getBodyExpression()
+					const instruction = this.evaluateExpressionNode(
+						ins.getBodyExpression(),
+						true
 					);
+					if (
+						!isExpectedDatatype(
+							new InstructionDataType(),
+							instruction.getDataType()
+						)
+					) {
+						throw new ExpectedDataTypesButFound(
+							[new InstructionDataType()],
+							instruction.getDataType(),
+							instruction.getSpan()
+						);
+					}
+					const evaluator = new Evaluator(instruction.getValue());
+					if (this.environment !== null) {
+						evaluator.setEnvironment(this.environment);
+					}
+					const res = evaluator.evaluate();
 					if (res !== null) return res;
 				}
 			} while (!exit);

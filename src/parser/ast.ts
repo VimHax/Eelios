@@ -507,6 +507,28 @@ export class PrintInstructionNode implements ASTNode {
 	}
 }
 
+export class LengthInstructionNode implements ASTNode {
+	private readonly expression: ExpressionNode;
+	private readonly span: Span;
+
+	public constructor(expression: ExpressionNode, span: Span) {
+		this.expression = expression;
+		this.span = span;
+	}
+
+	public getExpression(): ExpressionNode {
+		return this.expression;
+	}
+
+	public getSpan(): Span {
+		return this.span;
+	}
+
+	public toString(): string {
+		return 'Length Instruction';
+	}
+}
+
 export class AssignInstructionNode implements ASTNode {
 	private readonly lvalue: LValueNode;
 	private readonly expression: ExpressionNode;
@@ -656,6 +678,7 @@ export class WhileInstructionNode implements ASTNode {
 
 export type InstructionNode =
 	| PrintInstructionNode
+	| LengthInstructionNode
 	| AssignInstructionNode
 	| EvaluateInstructionNode
 	| ExecuteInstructionNode

@@ -15,7 +15,8 @@ import {
 	LValueVariableNode,
 	LValueIndexOfNode,
 	AssignInstructionNode,
-	ExpressionNode
+	ExpressionNode,
+	LengthInstructionNode
 } from './ast';
 
 // ParseInstruction //
@@ -41,6 +42,14 @@ export default function ParseInstruction(lexer: Lexer): InstructionNode {
 					token.getSpan().getStart(),
 					exprs[exprs.length - 1].getSpan().getEnd()
 				)
+			);
+		}
+		// Parse Len Instructions //
+		case TokenKind.LenKW: {
+			const expr = ParseExpression(lexer);
+			return new LengthInstructionNode(
+				expr,
+				new Span(token.getSpan().getStart(), expr.getSpan().getEnd())
 			);
 		}
 		// Parse Eval Instructions //

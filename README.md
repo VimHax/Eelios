@@ -174,6 +174,7 @@ Eelios also allows you to substitute in any expression which evaluates to a inst
 ```
 print <expression> # Prints the value of a single expression
 print <expression> . <expression> # Prints the value of multiple expressions (the expressions are seperated by a `.`)
+len <expression> # Returns the length of an array
 <variable> <- <expression> # Assigns the value that the expression evaluates to some variable
 eval <expression> # Returns the value that the expression evaluates to the code which called the instruction, anything after the `eval` instruction will not be executed. (this behaves like the `return` keyword in virtually every other language)
 exec <Instruction> # Executes the instruction and evaluates to the value that the instruction returned (this is the only instruction which can and can only be used in an expression, you can actually call this an operator if you like :D, even though it's not implemented as one)
@@ -181,7 +182,7 @@ if <expression> then <instruction> else <instruction> # If the expression evalua
 while <expression> do <instruction> # The instruction will be executed repeatedly while the expression evaluates to `true`
 ```
 
-> Unlike in every other language, the instructions inside of `if` and `while` statements aren't scoped, meaning, any variables you define inside of an `if` and `while` statement will not be discarded after Eelios continues from the instruction which made the variables.
+> `if` and `while` statements are scoped, so any new variables you create inside of `if` or `while` statements will be discarded
 
 Because of how the `eval` instruction and `exec` instructions work, you can emulate conditional (ternary) operator.
 
@@ -297,6 +298,23 @@ This function recursively calls itself to evaluate the factorial of `5`. So, in 
 ```
 print "Hello World"
 ```
+
+### Print a String letter by letter
+
+```
+[
+	text <- "Woah",
+	idx <- 0,
+	while idx < len text do [
+		print text[idx],
+		idx <- idx + 1
+	]
+]
+```
+
+![The result](https://i.ibb.co/qkR6G5v/image.png)
+
+This code makes use of `String` indexing, for getting each character, as well as the `len` instruction, to get the length of the text.
 
 ### Make a instruction evaluate to a value
 
