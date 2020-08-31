@@ -148,7 +148,7 @@ true, false # Boolean literals
 <T> + <T>, <Number> - <Number> # Addition & Subtraction binary operators (where T is Number | String)
 <Number> < <Number>, <Number> > <Number>, <Number> <= <Number>, <Number> >= <Number> # Less Than, Greater Than, Less Than Or Equal & Greater Than Or Equal binary operators
 <T> = <T>, <T> != <T> # Equal & Not Equal binary operators (where T is any data type other than Instruction or Array)
-<Boolean> and <Boolean>, <Boolean> or <Number> # And & Or binary operators
+<Boolean> & <Boolean>, <Boolean> | <Number> # And & Or binary operators
 ```
 
 All the operators are listed in the order of precedence, from highest to lowest. (So the plus & minus unary operators have the highest precedence)
@@ -161,7 +161,7 @@ This is the fun stuff... right, so any one instruction (any place where a single
 >
 > The code for executing a program is literally just executing one instruction...
 
-Take the `if` instruction, for example, it has the following syntax, `if <expression> then <instruction> else <instruction>`. You can use this instruction like shown below.
+Take the `if` instruction, for example, it has the following syntax, `if <Boolean> then <instruction> else <instruction>`. You can use this instruction like shown below.
 
 ```
 if a > b then print a else print b
@@ -186,31 +186,45 @@ Eelios also allows you to substitute in any expression which evaluates to a inst
 > The variable `elseBody` is a function which returns an array of instructions... Functions are explained in the next section
 
 ```
-print <expression> # Prints the value of a single expression
-print <expression> . <expression> # Prints the value of multiple expressions (the expressions are seperated by a `.`)
-len <array | string> # Returns the length of the array or string provided
-input <optional string> # Gets input from the user and returns a string (the optional string is a prompt message)
-toString <expression> # Converts the given value in to a string
-toNumber <string> # Converts the given string in to a number
-toBoolean <string> # Converts the given string in to a boolean
-isNumber <string> # Returns true if the string is a valid number i.e. it can be converted to a number without any errors
-isBoolean <string> # Returns true if the string is a valid boolean i.e. it can be converted to a boolean withoutt any errors
-<variable> <- <expression> # Assigns the value that the expression evaluates to some variable
-eval <expression> # Returns the value that the expression evaluates to the code which called the instruction, anything after the `eval` instruction will not be executed. (this behaves like the `return` keyword in virtually every other language)
+print <Any> # Prints the value of a single expression
+print <Any> . <Any> # Prints the value of multiple expressions (the expressions are seperated by a `.`)
+len <Array | String> # Returns the length of the array or string provided
+input <optional String> # Gets input from the user and returns a string (the optional string is a prompt message)
+toString <Any> # Converts the given value in to a string
+toNumber <String> # Converts the given string in to a number
+toBoolean <String> # Converts the given string in to a boolean
+isNumber <String> # Returns true if the string is a valid number i.e. it can be converted to a number without any errors
+isBoolean <String> # Returns true if the string is a valid boolean i.e. it can be converted to a boolean withoutt any errors
+<variable> <- <Any> # Assigns the value that the expression evaluates to some variable
+eval <Any> # Returns the value that the expression evaluates to the code which called the instruction, anything after the `eval` instruction will not be executed. (this behaves like the `return` keyword in literally every other language)
 exec <Instruction> # Executes the instruction and evaluates to the value that the instruction returned (this is the only instruction which can and can only be used in an expression, you can actually call this an operator if you like :D, even though it's not implemented as one)
-if <expression> then <instruction> else <instruction> # If the expression evaluates to `true` the first instruction will be executed, otherwise, if the second instruction exists, it will be executed
-while <expression> do <instruction> # The instruction will be executed repeatedly while the expression evaluates to `true`
+if <Boolean> then <Instruction> else <Instruction> # If the expression evaluates to `true` the first instruction will be executed, otherwise, if the second instruction exists, it will be executed
+while <Boolean> do <Instruction> # The instruction will be executed repeatedly while the expression evaluates to `true`
 ```
 
 > `if` and `while` statements are scoped, so any new variables you create inside of `if` or `while` statements will be discarded
 
-Because of how the `eval` instruction and `exec` instructions work, you can emulate conditional (ternary) operator.
+Because of how the `eval` instruction and `exec` instructions work, you can emulate the conditional (ternary) operator.
 
 ```
 c <- exec if a > b then eval x else eval y
 ```
 
 The `exec` instruction executes the `if` instruction and it executes the `eval` instruction which returns a value, that value is then assigned to `c`.
+
+Something I find interesting is `if..else if..else` instructions, as, they doesn't exist in the language (weren't specified in the language syntax), however the syntax works as expected.
+
+```
+if a > b then print "Larger" else if a = b then print "Equal" else print "Smaller"
+```
+
+If I add the square brackets, it will become clear as to how this works...
+
+```
+if a > b then [ print "Larger" ] else [ if a = b then [ print "Equal" ] else [ print "Smaller" ] ]
+```
+
+The `else` body of the first `if` instruction just consists of another `if` instruction, and, because you can remove the brackets as it's only one instruction, it seems like `else if` is a built in feature, even though it really isn't.
 
 ### Functions & Closures
 
@@ -226,7 +240,7 @@ The way you return a value from a function is using the previously mentioned `ev
 
 > There is no `void` return type, thus, every function, as well as closure, must always return a value
 
-Closures are basically identical to functions in Eelios, the only difference is that they capture the environment that they were defined in, so variables which were defined before the closure can be used and also mutated (even if those values go out of scope).
+Closures are basically identical to functions in Eelios, the only difference is that they capture the environment that they were defined in, so variables which were defined outside before the closure can be used and also mutated (even if those values go out of scope).
 
 ```
 ( <parameter> : <datatype> ) => <datatype> <instruction>
@@ -234,7 +248,9 @@ Closures are basically identical to functions in Eelios, the only difference is 
 
 > Any variables defined after the closure **cannot** be used inside of the closure, as, they were not a part of the environment it captured.
 
-If you wish to do recursion in Eelios, you must use the `self` value to reference the current function.
+If you wish to do recursion in Eelios, you must use the `self` value to reference the current function/closure.
+
+> I chose the term `self` to refer to the current function/closure instead of the name of the function, like in most other languages, because, well, all functions and closures in Eelios are anonymous, thus, by definition, they do **not** have a name assigned to them, unless they are assigned to a variable (which may not always be the case)
 
 #### Examples
 
@@ -423,7 +439,7 @@ The instruction `print "a: " . a . " x b: " . b . " = " . product` is invalid ou
 	c <- [],
 	
 	idx <- 0,
-	while idx < 5 do [
+	while idx < len a do [
 		b[idx] <- map(a[idx], addOne),
 		c[idx] <- map(a[idx], double),
 		idx <- idx + 1
@@ -437,7 +453,7 @@ The instruction `print "a: " . a . " x b: " . b . " = " . product` is invalid ou
 
 ![The result](https://i.ibb.co/x2pG7hy/image.png)
 
-> You can also return functions or closures from functions and closures, you can also have arrays of functions and closures etc...
+> You can also return functions or closures from functions and closures, you can also have arrays of functions or closures etc...
 
 ### Generate Fibonacci Numbers
 
