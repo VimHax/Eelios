@@ -2,7 +2,7 @@
 
 [![Run on Repl.it](https://repl.it/badge/github/VimHax/Eelios)](https://repl.it/github/VimHax/Eelios)
 
-Eelios is a programming language made, within approximately 2 weeks, for the ongoing (as of writing this) [Repl.It's Programming Jam](https://repl.it/jam). It is a pretty basic imperative language with a gimmick.
+Eelios is a programming language made, within approximately 2 weeks, for the ongoing (as of writing this) [Repl.It's Programming Jam](https://repl.it/jam). (It got disqualified as I was the only one who was working on it and the jam required atleast a team of 2 people) It is a pretty basic imperative language with a gimmick.
 
 ![The Jam](https://i.ibb.co/ZJzTxFc/image.png)
 
